@@ -16,7 +16,6 @@ A vanilla PHP recipe sharing platform with MySQL, featuring role-based access, r
 Web/
 ├── index.php              ← Redirects to public/
 ├── .env                   ← DB + Cloudinary credentials
-├── AGENTS.md              ← OpenCode agent instructions
 ├── includes/              ← Shared infrastructure
 │   ├── db.php             ← Single PDO connection
 │   ├── env.php            ← .env loader
