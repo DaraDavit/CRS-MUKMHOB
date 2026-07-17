@@ -1,6 +1,13 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-$prefix = substr_count(dirname($_SERVER['PHP_SELF']), '/') > 2 ? '../' : '';
+$dir = dirname($_SERVER['PHP_SELF']);
+$pub_pos = strpos($dir, '/public');
+if ($pub_pos !== false) {
+    $remaining = substr($dir, $pub_pos + 7);
+    $prefix = $remaining ? str_repeat('../', substr_count(ltrim($remaining, '/'), '/') + 1) : '';
+} else {
+    $prefix = ($dir !== '/' && $dir !== '') ? '../' : '';
+}
 ?>
 <style>
 .site-footer {

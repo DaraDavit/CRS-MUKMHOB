@@ -1,7 +1,14 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 $current_page = basename($_SERVER['PHP_SELF']);
-$prefix = substr_count(dirname($_SERVER['PHP_SELF']), '/') > 2 ? '../' : '';
+$dir = dirname($_SERVER['PHP_SELF']);
+$pub_pos = strpos($dir, '/public');
+if ($pub_pos !== false) {
+    $remaining = substr($dir, $pub_pos + 7);
+    $prefix = $remaining ? str_repeat('../', substr_count(ltrim($remaining, '/'), '/') + 1) : '';
+} else {
+    $prefix = ($dir !== '/' && $dir !== '') ? '../' : '';
+}
 ?>
 <style>
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
@@ -138,11 +145,11 @@ $prefix = substr_count(dirname($_SERVER['PHP_SELF']), '/') > 2 ? '../' : '';
 
 <header class="navbar-header">
     <div class="nav-left">
-        <a href="<?= $prefix; ?>../index.php" class="nav-logo"><img src="/Web/public/img/logo.svg" alt="MUK MHOB"></a>
+        <a href="<?= $prefix; ?>index.php" class="nav-logo"><img src="/Web/public/img/logo.svg" alt="MUK MHOB"></a>
     </div>
 
     <div class="nav-center">
-        <a href="<?= $prefix; ?>../index.php" class="nav-btn <?= ($current_page == 'index.php' && $prefix === '') ? 'active' : ''; ?>"><span class="material-icons">home</span> Home</a>
+        <a href="<?= $prefix; ?>index.php" class="nav-btn <?= ($current_page == 'index.php' && $prefix === '') ? 'active' : ''; ?>"><span class="material-icons">home</span> Home</a>
         <a href="<?= $prefix; ?>crs_app/index.php" class="nav-btn <?= (strpos($_SERVER['PHP_SELF'], '/crs_app/') !== false && basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>"><span class="material-icons">restaurant_menu</span> Recipes</a>
         <?php if (isset($_SESSION['user_id'])): ?>
             <a href="<?= $prefix; ?>user/my_favorites.php" class="nav-btn <?= (basename($_SERVER['PHP_SELF']) == 'my_favorites.php') ? 'active' : ''; ?>"><span class="material-icons">favorite</span> Favourites</a>
@@ -171,7 +178,7 @@ $prefix = substr_count(dirname($_SERVER['PHP_SELF']), '/') > 2 ? '../' : '';
     </div>
 
 <nav class="mobile-menu" id="mobileMenu">
-    <a href="<?= $prefix; ?>../index.php" class="nav-btn <?= ($current_page == 'index.php' && $prefix === '') ? 'active' : ''; ?>"><span class="material-icons">home</span> Home</a>
+    <a href="<?= $prefix; ?>index.php" class="nav-btn <?= ($current_page == 'index.php' && $prefix === '') ? 'active' : ''; ?>"><span class="material-icons">home</span> Home</a>
     <a href="<?= $prefix; ?>crs_app/index.php" class="nav-btn <?= (strpos($_SERVER['PHP_SELF'], '/crs_app/') !== false && basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>"><span class="material-icons">restaurant_menu</span> Recipes</a>
     <?php if (isset($_SESSION['user_id'])): ?>
         <a href="<?= $prefix; ?>user/my_favorites.php" class="nav-btn <?= (basename($_SERVER['PHP_SELF']) == 'my_favorites.php') ? 'active' : ''; ?>"><span class="material-icons">favorite</span> Favourites</a>
