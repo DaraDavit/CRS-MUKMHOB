@@ -8,6 +8,7 @@ if ($pub_pos !== false) {
 } else {
     $prefix = ($dir !== '/' && $dir !== '') ? '../' : '';
 }
+$base_url = $pub_pos !== false ? substr(dirname($_SERVER['PHP_SELF']), 0, $pub_pos + 7) : '';
 ?>
 <style>
 .site-footer {
@@ -38,7 +39,7 @@ if ($pub_pos !== false) {
 </style>
 <footer class="site-footer">
     <div class="footer-inner">
-        <div class="footer-brand"><img src="/Web/public/img/logo.svg" alt="MUK MHOB" style="height:24px;"></div>
+        <div class="footer-brand"><img src="<?= $base_url; ?>/img/logo.svg" alt="MUK MHOB" style="height:24px;"></div>
         <div class="footer-links">
             <a href="<?= $prefix; ?>terms.php">Terms</a>
             <span class="sep">·</span>

@@ -9,6 +9,7 @@ if ($pub_pos !== false) {
 } else {
     $prefix = ($dir !== '/' && $dir !== '') ? '../' : '';
 }
+$base_url = $pub_pos !== false ? substr(dirname($_SERVER['PHP_SELF']), 0, $pub_pos + 7) : '';
 ?>
 <style>
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
@@ -145,7 +146,7 @@ if ($pub_pos !== false) {
 
 <header class="navbar-header">
     <div class="nav-left">
-        <a href="<?= $prefix; ?>index.php" class="nav-logo"><img src="/Web/public/img/logo.svg" alt="MUK MHOB"></a>
+        <a href="<?= $prefix; ?>index.php" class="nav-logo"><img src="<?= $base_url; ?>/img/logo.svg" alt="MUK MHOB"></a>
     </div>
 
     <div class="nav-center">
