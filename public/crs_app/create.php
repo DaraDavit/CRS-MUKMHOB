@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../../includes/db.php';
+require '../../includes/cloudinary.php';
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'Admin' && $_SESSION['role'] !== 'Content Collector')) {
     header('Location: ../auth/login.php');
     exit;
@@ -8,63 +9,68 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'Admin' && $_SESSION[
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
-    $name = trim($_POST['name']);
-    $country_id = (int)$_POST['country_id'];
-    $description = trim($_POST['description'] ?? '');
-    $instructions = trim($_POST['instructions']);
-    $youtube_url = trim($_POST['youtube_url'] ?? '');
-    $image_url = trim($_POST['image_url'] ?? '');
-    $prep_time = !empty($_POST['prep_time_minutes']) ? (int)$_POST['prep_time_minutes'] : null;
-    $cook_time = !empty($_POST['cook_time_minutes']) ? (int)$_POST['cook_time_minutes'] : null;
-    $user_id = $_SESSION['user_id'] ?? null;
-
-    if (empty($name) || empty($instructions) || empty($country_id)) {
-        $error = "Name, instructions, and country are required.";
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid form submission.";
     } else {
-        $conn->beginTransaction();
-        try {
-            $stmt = $conn->prepare("INSERT INTO recipes (name, user_id, country_id, description, instructions, youtube_url, image_url, prep_time_minutes, cook_time_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $user_id, $country_id, $description, $instructions, $youtube_url, $image_url, $prep_time, $cook_time]);
-            $recipe_id = $conn->lastInsertId();
+        $name = trim($_POST['name']);
+        $country_id = (int)$_POST['country_id'];
+        $description = trim($_POST['description'] ?? '');
+        $instructions = trim($_POST['instructions']);
+        $youtube_url = trim($_POST['youtube_url'] ?? '');
+        $image_url = trim($_POST['image_url'] ?? '');
+        if (empty($image_url) && isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = cloudinary_upload($_FILES['image_file']['tmp_name']);
+            if ($uploaded) $image_url = $uploaded;
+        }
 
-            $ing_names = $_POST['ingredient_name'] ?? [];
-            $amounts = $_POST['amount'] ?? [];
+        if (empty($name) || empty($instructions) || empty($country_id)) {
+            $error = "Name, instructions, and country are required.";
+        } else {
+            $conn->beginTransaction();
+            try {
+                $stmt = $conn->prepare("INSERT INTO recipes (name, user_id, country_id, description, instructions, youtube_url, image_url, prep_time_minutes, cook_time_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $user_id, $country_id, $description, $instructions, $youtube_url, $image_url, $prep_time, $cook_time]);
+                $recipe_id = $conn->lastInsertId();
 
-            $find_ing = $conn->prepare("SELECT ingredient_id FROM ingredients WHERE name = ?");
-            $create_ing = $conn->prepare("INSERT INTO ingredients (name) VALUES (?)");
-            $link_ing = $conn->prepare("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, ?, ?)");
+                $ing_names = $_POST['ingredient_name'] ?? [];
+                $amounts = $_POST['amount'] ?? [];
 
-            for ($i = 0; $i < count($ing_names); $i++) {
-                $ing_name = trim($ing_names[$i] ?? '');
-                $amt = trim($amounts[$i] ?? '');
-                if (empty($ing_name)) continue;
-                $qty = null; $unit = $amt;
-                if (preg_match('/^([\d\.\/\s]+)\s+(.+)$/', $amt, $m)) { $qty = $m[1]; $unit = $m[2]; }
+                $find_ing = $conn->prepare("SELECT ingredient_id FROM ingredients WHERE name = ?");
+                $create_ing = $conn->prepare("INSERT INTO ingredients (name) VALUES (?)");
+                $link_ing = $conn->prepare("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, ?, ?)");
 
-                $find_ing->execute([$ing_name]);
-                $row = $find_ing->fetch();
+                for ($i = 0; $i < count($ing_names); $i++) {
+                    $ing_name = trim($ing_names[$i] ?? '');
+                    $amt = trim($amounts[$i] ?? '');
+                    if (empty($ing_name)) continue;
+                    $qty = null; $unit = $amt;
+                    if (preg_match('/^([\d\.\/\s]+)\s+(.+)$/', $amt, $m)) { $qty = $m[1]; $unit = $m[2]; }
 
-                if ($row) {
-                    $ingredient_id = $row['ingredient_id'];
-                } else {
-                    $create_ing->execute([$ing_name]);
-                    $ingredient_id = $conn->lastInsertId();
+                    $find_ing->execute([$ing_name]);
+                    $row = $find_ing->fetch();
+
+                    if ($row) {
+                        $ingredient_id = $row['ingredient_id'];
+                    } else {
+                        $create_ing->execute([$ing_name]);
+                        $ingredient_id = $conn->lastInsertId();
+                    }
+
+                    $link_ing->execute([$recipe_id, $ingredient_id, $qty, $unit]);
                 }
 
-                $link_ing->execute([$recipe_id, $ingredient_id, $qty, $unit]);
+                if (isset($_POST['categories'])) {
+                    $cs = $conn->prepare("INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)");
+                    foreach ($_POST['categories'] as $cid) { $cs->execute([$recipe_id, (int)$cid]); }
+                }
+                $conn->commit();
+                $_SESSION['message'] = "Recipe created successfully!";
+                header("Location: index.php");
+                exit;
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $error = "Error creating recipe: " . $e->getMessage();
             }
-
-            if (isset($_POST['categories'])) {
-                $cs = $conn->prepare("INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)");
-                foreach ($_POST['categories'] as $cid) { $cs->execute([$recipe_id, (int)$cid]); }
-            }
-            $conn->commit();
-            $_SESSION['message'] = "Recipe created successfully!";
-            header("Location: index.php");
-            exit;
-        } catch (Exception $e) {
-            $conn->rollBack();
-            $error = "Error creating recipe: " . $e->getMessage();
         }
     }
 }
@@ -129,6 +135,9 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name");
         .btn-back:hover { border-color:var(--border-hover); color:var(--text-main); }
         .form-actions { margin-top:32px; display:flex; align-items:center; }
         .msg-error { background:rgba(251,73,52,0.1); color:#fb4934; border:1px solid rgba(251,73,52,0.2); padding:12px; border-radius:10px; font-size:14px; font-weight:500; margin-bottom:20px; }
+        .select-wrap { display:flex; align-items:center; gap:8px; }
+        .select-spinner { width:14px; height:14px; border:2px solid var(--border-color); border-top-color:var(--primary-hover); border-radius:50%; animation:spin .6s linear infinite; display:none; flex-shrink:0; }
+        @keyframes spin { to { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -142,7 +151,8 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name");
                 <div class="msg-error"><?= htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                 <div class="form-group">
                     <label>Recipe Name</label>
                     <input type="text" name="name" required placeholder="e.g. Chicken Adobo">
@@ -158,15 +168,21 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name");
                 </div>
                 <div class="form-group">
                     <label>Region</label>
-                    <select name="region_id" id="region" required>
-                        <option value="">-- Select Food Type First --</option>
-                    </select>
+                    <div class="select-wrap">
+                        <select name="region_id" id="region" required>
+                            <option value="">-- Select Food Type First --</option>
+                        </select>
+                        <span class="select-spinner" id="region-spinner"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Country</label>
-                    <select name="country_id" id="country" required>
-                        <option value="">-- Select Region First --</option>
-                    </select>
+                    <div class="select-wrap">
+                        <select name="country_id" id="country" required>
+                            <option value="">-- Select Region First --</option>
+                        </select>
+                        <span class="select-spinner" id="country-spinner"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -181,8 +197,9 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name");
                     <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
                 </div>
                 <div class="form-group" style="grid-column:span 2;">
-                    <label>Image URL</label>
-                    <input type="url" name="image_url" placeholder="https://example.com/image.jpg">
+                    <label>Image</label>
+                    <input type="url" name="image_url" placeholder="https://example.com/image.jpg" style="margin-bottom:8px;">
+                    <input type="file" name="image_file" accept="image/*" style="color:var(--text-muted);font-size:13px;">
                 </div>
                 <div style="display:flex; gap:16px;">
                     <div class="form-group" style="flex:1;">
@@ -240,9 +257,11 @@ document.getElementById('food-type').addEventListener('change', function() {
     const ftId = this.value;
     const regionSel = document.getElementById('region');
     const countrySel = document.getElementById('country');
+    const rSpinner = document.getElementById('region-spinner');
     regionSel.innerHTML = '<option value="">-- Select Region --</option>';
     countrySel.innerHTML = '<option value="">-- Select Region First --</option>';
-    if (!ftId) return;
+    if (!ftId) { rSpinner.style.display = 'none'; return; }
+    rSpinner.style.display = 'inline-block';
     fetch('api.php?regions&food_type_id=' + ftId)
         .then(r => r.json())
         .then(data => {
@@ -252,13 +271,16 @@ document.getElementById('food-type').addEventListener('change', function() {
                 opt.textContent = reg.name;
                 regionSel.appendChild(opt);
             });
+            rSpinner.style.display = 'none';
         });
 });
 document.getElementById('region').addEventListener('change', function() {
     const regId = this.value;
     const countrySel = document.getElementById('country');
+    const cSpinner = document.getElementById('country-spinner');
     countrySel.innerHTML = '<option value="">-- Select Country --</option>';
-    if (!regId) return;
+    if (!regId) { cSpinner.style.display = 'none'; return; }
+    cSpinner.style.display = 'inline-block';
     fetch('api.php?countries&region_id=' + regId)
         .then(r => r.json())
         .then(data => {
@@ -268,6 +290,7 @@ document.getElementById('region').addEventListener('change', function() {
                 opt.textContent = c.name;
                 countrySel.appendChild(opt);
             });
+            cSpinner.style.display = 'none';
         });
 });
 

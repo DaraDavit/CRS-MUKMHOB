@@ -26,6 +26,11 @@ if (!empty($_GET['search'])) {
     $params[] = '%' . $_GET['search'] . '%';
 }
 
+$sort = $_GET['sort'] ?? 'created';
+$order = strtoupper($_GET['order'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+$sort_map = ['created' => 'r.created_at', 'name' => 'r.name', 'rating' => 'avg_rating', 'prep' => 'r.prep_time_minutes'];
+$order_col = $sort_map[$sort] ?? 'r.created_at';
+
 $sql = "SELECT r.recipe_id, r.name, r.prep_time_minutes, r.cook_time_minutes, r.created_at, r.image_url,
                c.name AS country_name, reg.name AS region_name, ft.name AS food_type_name,
                COALESCE(AVG(rev.rating), 0) AS avg_rating, COUNT(rev.review_id) AS review_count
@@ -39,8 +44,19 @@ $has_cat_filter = !empty($_GET['category_id']);
 if ($has_cat_filter) $sql .= " JOIN recipe_categories rc ON r.recipe_id = rc.recipe_id";
 
 if (!empty($where)) $sql .= ' WHERE ' . implode(' AND ', $where);
-$sql .= ' GROUP BY r.recipe_id ORDER BY r.created_at DESC';
+$sql .= " GROUP BY r.recipe_id ORDER BY $order_col $order";
 
+$count_sql = "SELECT COUNT(*) AS cnt FROM ($sql) sub";
+$count_stmt = $conn->prepare($count_sql);
+$count_stmt->execute($params);
+$total = (int)$count_stmt->fetch()['cnt'];
+
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 12;
+$offset = ($page - 1) * $per_page;
+$total_pages = max(1, (int)ceil($total / $per_page));
+
+$sql .= " LIMIT $per_page OFFSET $offset";
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 
@@ -140,6 +156,10 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
 
         .empty-state { text-align:center; padding:80px 20px; color:var(--text-muted); }
         .empty-state p { font-size:16px; margin-bottom:16px; }
+        .pagination { display:flex; justify-content:center; gap:6px; margin-top:24px; flex-wrap:wrap; }
+        .page-link { display:inline-flex; align-items:center; justify-content:center; min-width:36px; padding:8px 14px; border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; color:var(--text-muted); border:1px solid var(--border-color); transition:all 0.15s; }
+        .page-link:hover { border-color:var(--primary-hover); color:var(--primary-hover); }
+        .page-link.active { background:var(--primary); color:var(--bg-dim); border-color:var(--primary); }
 
         .cat-badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; background:rgba(69,133,137,0.12); color:var(--primary-hover); }
         @media (max-width:700px) { .recipe-grid { grid-template-columns:1fr; } }
@@ -199,6 +219,15 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
                     <label>Search</label>
                     <input type="text" name="search" placeholder="Name..." value="<?= htmlspecialchars($_GET['search'] ?? ''); ?>">
                 </div>
+                <div class="filter-group">
+                    <label>Sort</label>
+                    <select name="sort">
+                        <option value="created" <?= $sort === 'created' ? 'selected' : ''; ?>>Newest</option>
+                        <option value="name" <?= $sort === 'name' ? 'selected' : ''; ?>>Name</option>
+                        <option value="rating" <?= $sort === 'rating' ? 'selected' : ''; ?>>Rating</option>
+                        <option value="prep" <?= $sort === 'prep' ? 'selected' : ''; ?>>Prep Time</option>
+                    </select>
+                </div>
                 <div class="filter-group" style="align-self:end;">
                     <button type="submit" class="btn-filter">Filter</button>
                     <a href="index.php" class="btn-clear" style="margin-left:4px;">Clear</a>
@@ -254,6 +283,20 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
                     </div>
                     <?php endwhile; ?>
                 </div>
+
+                <?php if ($total_pages > 1): ?>
+                <div class="pagination">
+                    <?php if ($page > 1): ?>
+                    <a href="?page=<?= $page - 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?><?= !empty($_GET['food_type_id']) ? '&food_type_id=' . (int)$_GET['food_type_id'] : ''; ?><?= !empty($_GET['region_id']) ? '&region_id=' . (int)$_GET['region_id'] : ''; ?><?= !empty($_GET['country_id']) ? '&country_id=' . (int)$_GET['country_id'] : ''; ?><?= !empty($_GET['category_id']) ? '&category_id=' . (int)$_GET['category_id'] : ''; ?><?= !empty($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link">&laquo; Prev</a>
+                    <?php endif; ?>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <a href="?page=<?= $i; ?>&sort=<?= $sort; ?>&order=<?= $order; ?><?= !empty($_GET['food_type_id']) ? '&food_type_id=' . (int)$_GET['food_type_id'] : ''; ?><?= !empty($_GET['region_id']) ? '&region_id=' . (int)$_GET['region_id'] : ''; ?><?= !empty($_GET['country_id']) ? '&country_id=' . (int)$_GET['country_id'] : ''; ?><?= !empty($_GET['category_id']) ? '&category_id=' . (int)$_GET['category_id'] : ''; ?><?= !empty($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link <?= $i === $page ? 'active' : ''; ?>"><?= $i; ?></a>
+                    <?php endfor; ?>
+                    <?php if ($page < $total_pages): ?>
+                    <a href="?page=<?= $page + 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?><?= !empty($_GET['food_type_id']) ? '&food_type_id=' . (int)$_GET['food_type_id'] : ''; ?><?= !empty($_GET['region_id']) ? '&region_id=' . (int)$_GET['region_id'] : ''; ?><?= !empty($_GET['country_id']) ? '&country_id=' . (int)$_GET['country_id'] : ''; ?><?= !empty($_GET['category_id']) ? '&category_id=' . (int)$_GET['category_id'] : ''; ?><?= !empty($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link">Next &raquo;</a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </main>

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../../includes/db.php';
+require '../../includes/cloudinary.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'Admin' && $_SESSION['role'] !== 'Content Collector')) {
     header('Location: ../auth/login.php');
@@ -26,12 +27,19 @@ if (!$recipe) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid form submission.";
+    } else {
     $name = trim($_POST['name']);
     $country_id = (int)$_POST['country_id'];
     $description = trim($_POST['description'] ?? '');
     $instructions = trim($_POST['instructions']);
     $youtube_url = trim($_POST['youtube_url'] ?? '');
     $image_url = trim($_POST['image_url'] ?? '');
+    if (empty($image_url) && isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+        $uploaded = cloudinary_upload($_FILES['image_file']['tmp_name']);
+        if ($uploaded) $image_url = $uploaded;
+    }
     $prep_time = !empty($_POST['prep_time_minutes']) ? (int)$_POST['prep_time_minutes'] : null;
     $cook_time = !empty($_POST['cook_time_minutes']) ? (int)$_POST['cook_time_minutes'] : null;
 
@@ -88,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             $conn->rollBack();
             $error = "Error updating recipe: " . $e->getMessage();
         }
+    }
     }
 }
 
@@ -188,6 +197,9 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
         .btn-back:hover { border-color:var(--border-hover); color:var(--text-main); }
         .form-actions { margin-top:32px; display:flex; align-items:center; }
         .msg-error { background:rgba(251,73,52,0.1); color:#fb4934; border:1px solid rgba(251,73,52,0.2); padding:12px; border-radius:10px; font-size:14px; font-weight:500; margin-bottom:20px; }
+        .select-wrap { display:flex; align-items:center; gap:8px; }
+        .select-spinner { width:14px; height:14px; border:2px solid var(--border-color); border-top-color:var(--primary-hover); border-radius:50%; animation:spin .6s linear infinite; display:none; flex-shrink:0; }
+        @keyframes spin { to { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -201,7 +213,8 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
                 <div class="msg-error"><?= htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                 <div class="form-group">
                     <label>Recipe Name</label>
                     <input type="text" name="name" required value="<?= htmlspecialchars($recipe['name']); ?>">
@@ -222,25 +235,31 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
                 </div>
                 <div class="form-group">
                     <label>Region</label>
-                    <select name="region_id" id="region" required>
-                        <option value="">-- Select Region --</option>
-                        <?php foreach ($regions as $r): ?>
-                            <option value="<?= $r['region_id']; ?>" <?= $r['region_id'] == $location['region_id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($r['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="select-wrap">
+                        <select name="region_id" id="region" required>
+                            <option value="">-- Select Region --</option>
+                            <?php foreach ($regions as $r): ?>
+                                <option value="<?= $r['region_id']; ?>" <?= $r['region_id'] == $location['region_id'] ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($r['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="select-spinner" id="region-spinner"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Country</label>
-                    <select name="country_id" id="country" required>
-                        <option value="">-- Select Country --</option>
-                        <?php foreach ($countries as $c): ?>
-                            <option value="<?= $c['country_id']; ?>" <?= $c['country_id'] == $recipe['country_id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($c['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="select-wrap">
+                        <select name="country_id" id="country" required>
+                            <option value="">-- Select Country --</option>
+                            <?php foreach ($countries as $c): ?>
+                                <option value="<?= $c['country_id']; ?>" <?= $c['country_id'] == $recipe['country_id'] ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($c['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="select-spinner" id="country-spinner"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -255,8 +274,9 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
                     <input type="url" name="youtube_url" value="<?= htmlspecialchars($recipe['youtube_url'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
-                    <label>Image URL</label>
-                    <input type="url" name="image_url" value="<?= htmlspecialchars($recipe['image_url'] ?? ''); ?>" placeholder="https://example.com/image.jpg">
+                    <label>Image</label>
+                    <input type="url" name="image_url" value="<?= htmlspecialchars($recipe['image_url'] ?? ''); ?>" placeholder="https://example.com/image.jpg" style="margin-bottom:8px;">
+                    <input type="file" name="image_file" accept="image/*" style="color:var(--text-muted);font-size:13px;">
                 </div>
                 <div style="display:flex; gap:16px;">
                     <div class="form-group" style="flex:1;">
@@ -327,9 +347,11 @@ document.getElementById('food-type').addEventListener('change', function() {
     const ftId = this.value;
     const regionSel = document.getElementById('region');
     const countrySel = document.getElementById('country');
+    const rSpinner = document.getElementById('region-spinner');
     regionSel.innerHTML = '<option value="">-- Select Region --</option>';
     countrySel.innerHTML = '<option value="">-- Select Country --</option>';
-    if (!ftId) return;
+    if (!ftId) { rSpinner.style.display = 'none'; return; }
+    rSpinner.style.display = 'inline-block';
     fetch('api.php?regions&food_type_id=' + ftId)
         .then(r => r.json())
         .then(data => {
@@ -339,13 +361,16 @@ document.getElementById('food-type').addEventListener('change', function() {
                 opt.textContent = reg.name;
                 regionSel.appendChild(opt);
             });
+            rSpinner.style.display = 'none';
         });
 });
 document.getElementById('region').addEventListener('change', function() {
     const regId = this.value;
     const countrySel = document.getElementById('country');
+    const cSpinner = document.getElementById('country-spinner');
     countrySel.innerHTML = '<option value="">-- Select Country --</option>';
-    if (!regId) return;
+    if (!regId) { cSpinner.style.display = 'none'; return; }
+    cSpinner.style.display = 'inline-block';
     fetch('api.php?countries&region_id=' + regId)
         .then(r => r.json())
         .then(data => {
@@ -355,6 +380,7 @@ document.getElementById('region').addEventListener('change', function() {
                 opt.textContent = c.name;
                 countrySel.appendChild(opt);
             });
+            cSpinner.style.display = 'none';
         });
 });
 
