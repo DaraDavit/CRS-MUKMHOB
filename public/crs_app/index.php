@@ -85,6 +85,7 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recipe Collection</title>
     <style>
         :root, [data-theme="light"] {
@@ -104,6 +105,7 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
         h2 { color:var(--text-main); font-weight:800; letter-spacing:-0.5px; margin-bottom:20px; }
         .alert { padding:12px; background:rgba(69,133,137,0.15); color:var(--primary-hover); border:1px solid rgba(69,133,137,0.3); border-radius:6px; margin-bottom:20px; font-weight:bold; font-size:14px; }
 
+        .filter-toggle { display:none; }
         .header-bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
         .btn {
             display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:8px;
@@ -167,10 +169,12 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
             .container { padding:16px; }
             .main-content { padding:20px 12px; }
             .recipe-card { padding:16px; }
-            .filters { flex-direction:column; gap:8px; }
+            .filters { display:none; flex-direction:column; gap:8px; }
+            .filters.open { display:flex; }
             .filter-group { width:100%; }
             .filter-group select, .filter-group input { width:100%; }
             .filter-group:last-child { flex-direction:row; align-self:stretch; }
+            .filter-toggle { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); transition:all 0.15s ease; margin-bottom:16px; }
         }
     </style>
 </head>
@@ -187,7 +191,8 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
                 <div class="alert"><?= htmlspecialchars($_SESSION['message']); ?><?php unset($_SESSION['message']); ?></div>
             <?php endif; ?>
 
-            <form method="GET" class="filters">
+            <button class="filter-toggle" id="filterToggle"><span class="material-icons">filter_list</span> Filters</button>
+            <form method="GET" class="filters" id="filterForm">
                 <div class="filter-group">
                     <label>Food Type</label>
                     <select name="food_type_id" id="filter-food-type">
@@ -311,6 +316,17 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
     </main>
 </div>
 <script>
+const toggle = document.getElementById('filterToggle');
+const filterForm = document.getElementById('filterForm');
+if (toggle && filterForm) {
+    toggle.addEventListener('click', function() {
+        filterForm.classList.toggle('open');
+        toggle.innerHTML = filterForm.classList.contains('open')
+            ? '<span class="material-icons">close</span> Hide Filters'
+            : '<span class="material-icons">filter_list</span> Filters';
+    });
+}
+
 document.getElementById('filter-food-type').addEventListener('change', function() {
     const ftId = this.value;
     const regionSel = document.getElementById('filter-region');
