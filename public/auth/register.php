@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['username'] = $username;
                 $_SESSION['role'] = 'User';
                 $_SESSION['avatar_url'] = null;
+                $_SESSION['show_welcome'] = true;
                 header('Location: ../index.php');
                 exit;
             }

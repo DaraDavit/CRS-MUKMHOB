@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['avatar_url'] = $user['avatar_url'] ?? '';
+            $_SESSION['show_welcome'] = true;
             
             $redirect = $_GET['redirect'] ?? '../index.php';
             if (preg_match('#^https?://#i', $redirect)) {

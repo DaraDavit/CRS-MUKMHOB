@@ -231,7 +231,7 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name")->fetchAll()
             </div>
         </section>
 
-        <?php if (isset($_SESSION['user_id'])): ?>
+        <?php if (isset($_SESSION['show_welcome'])): ?>
         <div class="fixed top-20 left-0 right-0 z-[999] flex justify-center pointer-events-none">
             <div id="welcomeToast" class="flex items-center gap-3 bg-[var(--card-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-xl px-5 py-3.5 shadow-2xl cursor-pointer pointer-events-auto animate-[toastIn_0.5s_cubic-bezier(0.34,1.56,0.64,1),toastOut_0.4s_ease_3s_forwards]">
                 <div class="w-9 h-9 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-base font-extrabold shrink-0">
@@ -243,6 +243,7 @@ $food_types = $conn->query("SELECT * FROM food_types ORDER BY name")->fetchAll()
                 </div>
             </div>
         </div>
+        <?php unset($_SESSION['show_welcome']); ?>
         <?php endif; ?>
 
         <!-- EXPLORE CHIPS -->
