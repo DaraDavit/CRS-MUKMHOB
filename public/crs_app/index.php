@@ -162,7 +162,16 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll()
         .page-link.active { background:var(--primary); color:var(--bg-dim); border-color:var(--primary); }
 
         .cat-badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; background:rgba(69,133,137,0.12); color:var(--primary-hover); }
-        @media (max-width:700px) { .recipe-grid { grid-template-columns:1fr; } }
+        @media (max-width:700px) {
+            .recipe-grid { grid-template-columns:1fr; }
+            .container { padding:16px; }
+            .main-content { padding:20px 12px; }
+            .recipe-card { padding:16px; }
+            .filters { flex-direction:column; gap:8px; }
+            .filter-group { width:100%; }
+            .filter-group select, .filter-group input { width:100%; }
+            .filter-group:last-child { flex-direction:row; align-self:stretch; }
+        }
     </style>
 </head>
 <body>
