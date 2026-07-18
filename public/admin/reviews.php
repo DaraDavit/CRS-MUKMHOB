@@ -61,12 +61,12 @@ $result->execute($params);
             --danger: #cc241d; --danger-hover: #fb4934;
         }
         [data-theme="light"] {
-            --bg-color: #f8f5f0; --bg-dim: #f0ebe4;
-            --card-bg: #ffffff;
-            --text-main: #4a3b2e; --text-muted: #8a7f78;
-            --primary: #458589; --primary-hover: #83a598;
-            --border-color: #e0d6cc;
-            --danger: #c0392b; --danger-hover: #e74c3c;
+            --bg-color: #d5c4a1; --bg-dim: #c9b99a;
+            --card-bg: #ebdbb2;
+            --text-main: #3c3836; --text-muted: #7c6f64;
+            --primary: #458588; --primary-hover: #83a598;
+            --border-color: #bdae93;
+            --danger: #9d0006; --danger-hover: #cc241d;
         }
         * { box-sizing:border-box; font-family:var(--font-stack); margin:0; padding:0; }
         body { background-color:var(--bg-dim); color:var(--text-muted); -webkit-font-smoothing:antialiased; }
@@ -161,6 +161,7 @@ $result->execute($params);
                     <?php if ($rev['comment']): ?>
                         <div class="comment"><?= nl2br(htmlspecialchars($rev['comment'])); ?></div>
                     <?php endif; ?>
+                    <a href="../crs_app/view.php?id=<?= $rev['recipe_id']; ?>" class="btn-view" style="display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;background:var(--primary);color:var(--bg-dim);margin-right:4px;">View</a>
                     <a href="reviews.php?delete=<?= $rev['review_id']; ?>" class="btn-del" onclick="return confirm('Delete this review?')">Delete</a>
                 </div>
                 <?php endwhile; ?>

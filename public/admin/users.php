@@ -32,6 +32,9 @@ $toast_msg = '';
 
 // Create user
 if (isset($_POST['add_user'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $toast_msg = "Invalid form submission.";
+    } else {
     $u = trim($_POST['username']); $e = trim($_POST['email']); $p = $_POST['password']; $r = $_POST['role'];
     if (!empty($u) && !empty($e) && !empty($p)) {
         $h = password_hash($p, PASSWORD_BCRYPT);
@@ -39,10 +42,14 @@ if (isset($_POST['add_user'])) {
         $s->execute([$u, $e, $h, $r]);
         $toast_msg = "User '$u' created!";
     } else { $toast_msg = "All fields required."; }
+    }
 }
 
 // Edit user
 if (isset($_POST['edit_user'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $toast_msg = "Invalid form submission.";
+    } else {
     $id = (int)$_POST['edit_user_id'];
     $u = trim($_POST['username']); $e = trim($_POST['email']); $r = $_POST['role'];
     if (!empty($u) && !empty($e)) {
@@ -56,6 +63,7 @@ if (isset($_POST['edit_user'])) {
         }
         $toast_msg = "User '$u' updated!";
     } else { $toast_msg = "All fields required."; }
+    }
 }
 
 // Delete user
@@ -85,7 +93,17 @@ if ($role_filter === 'Admin' || $role_filter === 'User' || $role_filter === 'Con
 $sort_map = ['created' => 'created_at', 'username' => 'username', 'email' => 'email'];
 $order_col = $sort_map[$sort] ?? 'created_at';
 
-$result = $conn->prepare("SELECT * FROM users WHERE $where ORDER BY $order_col $order");
+$count_sql = "SELECT COUNT(*) FROM users WHERE $where";
+$count_stmt = $conn->prepare($count_sql);
+$count_stmt->execute($params);
+$total = (int)$count_stmt->fetchColumn();
+
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
+$total_pages = max(1, (int)ceil($total / $per_page));
+
+$result = $conn->prepare("SELECT * FROM users WHERE $where ORDER BY $order_col $order LIMIT $per_page OFFSET $offset");
 $result->execute($params);
 $max_len = 20;
 ?>
@@ -106,13 +124,13 @@ $max_len = 20;
             --green: #b8bb26;
         }
         [data-theme="light"] {
-            --bg-color: #f8f5f0; --bg-dim: #f0ebe4;
-            --card-bg: #ffffff;
-            --text-main: #4a3b2e; --text-muted: #8a7f78;
-            --primary: #458589; --primary-hover: #83a598;
-            --border-color: #e0d6cc;
-            --danger: #c0392b; --danger-hover: #e74c3c;
-            --green: #689d6a;
+            --bg-color: #d5c4a1; --bg-dim: #c9b99a;
+            --card-bg: #ebdbb2;
+            --text-main: #3c3836; --text-muted: #7c6f64;
+            --primary: #458588; --primary-hover: #83a598;
+            --border-color: #bdae93;
+            --danger: #9d0006; --danger-hover: #cc241d;
+            --green: #79740e;
         }
         * { box-sizing:border-box; font-family:var(--font-stack); margin:0; padding:0; }
         body { background-color:var(--bg-dim); color:var(--text-muted); -webkit-font-smoothing:antialiased; }
@@ -202,6 +220,10 @@ $max_len = 20;
         #toast.show { transform:translateX(0); opacity:1; }
         #toast .check { font-size:20px; }
         #toast.err { color:var(--danger-hover); }
+        .pagination{display:flex;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap}
+        .page-link{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text-muted);border:1px solid var(--border-color);transition:all .15s}
+        .page-link:hover{border-color:var(--primary-hover);color:var(--primary-hover)}
+        .page-link.active{background:var(--primary);color:var(--bg-dim);border-color:var(--primary)}
         @media (max-width:600px) { .modal-card { max-width:100%; margin:0 10px; padding:24px; } }
         @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         .modal-card .fg { animation:slideUp .25s ease both; }
@@ -276,7 +298,19 @@ $max_len = 20;
                     <?php endwhile; ?>
                 </tbody>
             </table>
+            <?php if ($total_pages > 1): ?>
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                <a href="?page=<?= $page - 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&role=<?= $role_filter; ?>" class="page-link">&laquo; Prev</a>
+                <?php endif; ?>
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                <a href="?page=<?= $i; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&role=<?= $role_filter; ?>" class="page-link <?= $i === $page ? 'active' : ''; ?>"><?= $i; ?></a>
+                <?php endfor; ?>
+                <?php if ($page < $total_pages): ?>
+                <a href="?page=<?= $page + 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&role=<?= $role_filter; ?>" class="page-link">Next &raquo;</a>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
     </main>
     </div>
@@ -291,6 +325,7 @@ $max_len = 20;
         <p class="sub" id="modalSub">Add a new user to the system</p>
         <div class="modal-err" id="modalError"></div>
         <form id="userForm" method="POST" onsubmit="return handleSubmit(event)">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
             <input type="hidden" name="edit_user_id" id="editUserId" value="">
 
             <div class="fg">

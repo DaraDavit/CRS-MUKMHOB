@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 $toast_msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quick_create'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $toast_msg = "Invalid form submission.";
+    } else {
     $name = trim($_POST['name']);
     $country_id = (int)$_POST['country_id'];
     $description = trim($_POST['description'] ?? '');
@@ -58,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quick_create'])) {
             $toast_msg = "Error: " . $e->getMessage();
         }
     }
+    }
 }
 
 $search = trim($_GET['search'] ?? '');
@@ -94,6 +98,23 @@ $sql = "SELECT r.recipe_id, r.name, r.created_at, u.username, c.name AS country_
         GROUP BY r.recipe_id
         ORDER BY $order_col $order";
 
+$count_sql = "SELECT COUNT(*) AS cnt FROM ($sql) sub";
+if (empty($params)) {
+    $count_result = $conn->query($count_sql);
+} else {
+    $count_stmt = $conn->prepare($count_sql);
+    $count_stmt->execute($params);
+    $count_result = $count_stmt;
+}
+$total = (int)$count_result->fetch()['cnt'];
+
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
+$total_pages = max(1, (int)ceil($total / $per_page));
+
+$sql .= " LIMIT $per_page OFFSET $offset";
+
 if (empty($params)) {
     $result = $conn->query($sql);
 } else {
@@ -112,7 +133,7 @@ $categories_q = $conn->query("SELECT * FROM categories ORDER BY name")->fetchAll
 <title>Admin — Recipes</title>
 <style>
 :root{--bg:#282828;--bg-dim:#1d2021;--card:rgba(50,48,47,0.7);--gold:#d79921;--muted:#a89984;--teal:#458589;--teal-h:#83a598;--border:rgba(60,56,54,0.6);--font:system-ui,-apple-system,sans-serif;--danger:#cc241d;--danger-hover:#fb4934;--green:#b8bb26}
-[data-theme="light"]{--bg:#f8f5f0;--bg-dim:#f0ebe4;--card:#ffffff;--gold:#b5895c;--muted:#8a7f78;--teal:#5a9a9c;--teal-h:#7ab0b2;--border:#e0d6cc;--danger:#c0392b;--danger-hover:#e74c3c;--green:#689d6a}
+[data-theme="light"]{--bg:#d5c4a1;--bg-dim:#c9b99a;--card:#ebdbb2;--gold:#b57614;--muted:#7c6f64;--teal:#458588;--teal-h:#83a598;--border:#bdae93;--danger:#9d0006;--danger-hover:#cc241d;--green:#79740e}
 *{box-sizing:border-box;font-family:var(--font);margin:0;padding:0}
 body{background:var(--bg-dim);color:var(--muted);-webkit-font-smoothing:antialiased}
 .page-wrapper{display:flex;flex-direction:column;min-height:100vh}
@@ -180,6 +201,10 @@ tr:hover{background:rgba(60,56,54,.3)}
 #toast{position:fixed;top:20px;right:20px;z-index:9999;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:700;background:rgba(40,40,40,.95);border:1px solid var(--border);backdrop-filter:blur(12px);color:var(--green);transform:translateX(120%);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);box-shadow:0 10px 30px -8px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px}
 #toast.show{transform:translateX(0);opacity:1}
 #toast.err{color:var(--danger-hover)}
+.pagination{display:flex;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap}
+.page-link{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid var(--border);transition:all .15s}
+.page-link:hover{border-color:var(--teal-h);color:var(--teal-h)}
+.page-link.active{background:var(--teal);color:var(--bg-dim);border-color:var(--teal)}
 @media(max-width:600px){.modal-card{max-width:100%;margin:0 10px;padding:20px}}
 </style>
 </head>
@@ -242,6 +267,19 @@ tr:hover{background:rgba(60,56,54,.3)}
 <?php endwhile; ?>
 </tbody>
 </table>
+<?php if ($total_pages > 1): ?>
+<div class="pagination">
+    <?php if ($page > 1): ?>
+    <a href="?page=<?= $page - 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&food_type_id=<?= $food_type_filter; ?>" class="page-link">&laquo; Prev</a>
+    <?php endif; ?>
+    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+    <a href="?page=<?= $i; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&food_type_id=<?= $food_type_filter; ?>" class="page-link <?= $i === $page ? 'active' : ''; ?>"><?= $i; ?></a>
+    <?php endfor; ?>
+    <?php if ($page < $total_pages): ?>
+    <a href="?page=<?= $page + 1; ?>&sort=<?= $sort; ?>&order=<?= $order; ?>&search=<?= urlencode($search); ?>&food_type_id=<?= $food_type_filter; ?>" class="page-link">Next &raquo;</a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 </div>
 </div>
 </main>
@@ -257,6 +295,7 @@ tr:hover{background:rgba(60,56,54,.3)}
 <p class="sub">Add a new recipe to the collection</p>
 <div class="modal-err" id="modalError"></div>
 <form id="recipeForm" method="POST" onsubmit="return handleRecipeSubmit(event)">
+<input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
 <div class="form-grid">
 <div class="fg full"><label>Recipe Name <span class="req">*</span></label><input type="text" name="name" required placeholder="e.g. Chicken Adobo"></div>
 <div class="fg"><label>Food Type <span class="req">*</span></label>

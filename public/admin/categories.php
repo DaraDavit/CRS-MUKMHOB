@@ -52,7 +52,7 @@ $result->execute($params);
 <head><meta charset="UTF-8"><title>Admin — Categories</title>
 <style>
 :root{--bg:#282828;--bg-dim:#1d2021;--card:rgba(50,48,47,0.7);--gold:#d79921;--muted:#a89984;--teal:#458589;--teal-h:#83a598;--border:rgba(60,56,54,0.6);--font:system-ui,-apple-system,sans-serif;--red:#cc241d;--red-h:#fb4934}
-[data-theme="light"]{--bg:#f8f5f0;--bg-dim:#f0ebe4;--card:#ffffff;--gold:#b5895c;--muted:#8a7f78;--teal:#5a9a9c;--teal-h:#7ab0b2;--border:#e0d6cc;--red:#c0392b;--red-h:#e74c3c}
+[data-theme="light"]{--bg:#d5c4a1;--bg-dim:#c9b99a;--card:#ebdbb2;--gold:#b57614;--muted:#7c6f64;--teal:#458588;--teal-h:#83a598;--border:#bdae93;--red:#9d0006;--red-h:#cc241d}
 *{box-sizing:border-box;font-family:var(--font);margin:0;padding:0}
 body{background:var(--bg-dim);color:var(--muted);-webkit-font-smoothing:antialiased}
 .page-wrapper{display:flex;flex-direction:column;min-height:100vh}
