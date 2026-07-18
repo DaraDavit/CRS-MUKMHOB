@@ -29,7 +29,7 @@ h2{color:var(--text-main);font-weight:800;margin-bottom:20px;}
 <body>
 <div class="page-wrapper"><?php include '../../includes/navbar.php'; ?><main class="main-content"><div class="container"><h2>My Reviews</h2>
 <?php while ($r = $stmt->fetch()): ?>
-<div class="review-item"><h3><?= htmlspecialchars($r['recipe_name']); ?></h3><p><?php for ($i = 0; $i < 5; $i++): ?><span class="material-icons" style="font-size:14px;color:#d79921;vertical-align:middle;"><?= $i < $r['rating'] ? 'star' : 'star_outline'; ?></span><?php endfor; ?> · <?= $r['created_at']; ?></p><?php if ($r['comment']): ?><p><?= nl2br(htmlspecialchars($r['comment'])); ?></p><?php endif; ?></div>
+<div class="review-item"><h3><a href="../crs_app/view.php?id=<?= $r['recipe_id']; ?>" style="color:var(--primary-hover);text-decoration:none;"><?= htmlspecialchars($r['recipe_name']); ?></a></h3><p><?php for ($i = 0; $i < 5; $i++): ?><span class="material-icons" style="font-size:14px;color:#d79921;vertical-align:middle;"><?= $i < $r['rating'] ? 'star' : 'star_outline'; ?></span><?php endfor; ?> · <?= $r['created_at']; ?></p><?php if ($r['comment']): ?><p><?= nl2br(htmlspecialchars($r['comment'])); ?></p><?php endif; ?></div>
 <?php endwhile; ?>
 </div></main></div><?php include '../../includes/footer.php'; ?></body>
 </html>
