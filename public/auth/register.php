@@ -2,7 +2,6 @@
 session_start();
 require '../../includes/db.php';
 $error_message = '';
-$success_message = '';
 $username = '';
 $email = '';
 
@@ -35,7 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => $email,
                     'password' => $hashedPassword
                 ]);
-                $success_message = "Registration successful! Redirecting to login...";
+                $_SESSION['user_id'] = $conn->lastInsertId();
+                $_SESSION['username'] = $username;
+                $_SESSION['role'] = 'User';
+                $_SESSION['avatar_url'] = null;
+                header('Location: ../index.php');
+                exit;
             }
         }
     } else {
@@ -135,11 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php if (!empty($error_message)): ?>
                     <div class="msg-error"><?php echo htmlspecialchars($error_message); ?></div>
-                <?php endif; ?>
-
-                <?php if (!empty($success_message)): ?>
-                    <div class="msg-success"><?php echo htmlspecialchars($success_message); ?></div>
-                    <script>setTimeout(() => { window.location.href = 'login.php'; }, 2000);</script>
                 <?php endif; ?>
 
                 <form action="register.php" method="POST">

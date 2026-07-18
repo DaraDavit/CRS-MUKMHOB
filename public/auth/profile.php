@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../../includes/db.php';
+require '../../includes/cloudinary.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -8,7 +9,52 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$query = $conn->prepare("SELECT username, email, created_at, avatar_url FROM users WHERE user_id = :id");
+$error = '';
+$success = '';
+
+// Profile update handler
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
+    $new_username = trim($_POST['username']);
+    $gender = $_POST['gender'] ?? '';
+    $pronouns = trim($_POST['pronouns'] ?? '');
+    if (empty($new_username)) {
+        $error = "Username is required.";
+    } else {
+        $upd = $conn->prepare("UPDATE users SET username = :username, gender = :gender, pronouns = :pronouns WHERE user_id = :id");
+        $upd->execute(['username' => $new_username, 'gender' => $gender, 'pronouns' => $pronouns, 'id' => $user_id]);
+        $_SESSION['username'] = $new_username;
+        $success = "Profile updated!";
+        $user['username'] = $new_username;
+        $user['gender'] = $gender;
+        $user['pronouns'] = $pronouns;
+    }
+}
+
+// Avatar upload handler
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+    $allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!in_array($_FILES['avatar']['type'], $allowed)) {
+        $error = "Avatar must be JPG, PNG, or WebP.";
+    } elseif ($_FILES['avatar']['size'] > 2 * 1024 * 1024) {
+        $error = "Avatar must be under 2MB.";
+    } else {
+        $avatar_url = cloudinary_upload($_FILES['avatar']['tmp_name'], 'avatar_' . $user_id, 'crs_app/profiles');
+        if ($avatar_url) {
+            $old_avatar = $conn->prepare("SELECT avatar_url FROM users WHERE user_id = :id");
+            $old_avatar->execute(['id' => $user_id]);
+            $old = $old_avatar->fetchColumn();
+            $upd = $conn->prepare("UPDATE users SET avatar_url = :url WHERE user_id = :id");
+            $upd->execute(['url' => $avatar_url, 'id' => $user_id]);
+            if (!empty($old)) cloudinary_delete($old);
+            $_SESSION['avatar_url'] = $avatar_url;
+            $success = "Avatar updated!";
+        } else {
+            $error = "Upload failed. Check Cloudinary config.";
+        }
+    }
+}
+
+$query = $conn->prepare("SELECT username, email, gender, pronouns, created_at, avatar_url FROM users WHERE user_id = :id");
 $query->execute(['id' => $user_id]);
 $user = $query->fetch(PDO::FETCH_ASSOC);
 
@@ -120,6 +166,54 @@ $recent_favs->execute(['id' => $user_id]);
         }
         .info-value { font-size: 15px; font-weight: 600; }
 
+        .avatar-wrap {
+            position: relative;
+            display: inline-block;
+            margin: 0 auto 12px;
+            text-decoration: none;
+        }
+        .avatar-wrap .avatar { margin-bottom: 0; }
+        .avatar-plus {
+            position: absolute;
+            bottom: -2px;
+            right: -6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            border: 2px solid var(--bg-color);
+            transition: background 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .avatar-plus:hover { background: var(--primary-hover); }
+        .edit-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+            transition: color 0.2s;
+        }
+        .edit-link:hover { color: var(--primary-hover); }
+        .upload-msg {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .upload-msg.error { background: rgba(251,73,52,0.1); color: #fb4934; }
+        .upload-msg.success { background: rgba(184,187,38,0.1); color: #b8bb26; }
         .stats-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -260,6 +354,50 @@ $recent_favs->execute(['id' => $user_id]);
 
         .empty-text { font-size: 13px; color: var(--text-muted); padding: 10px 0 16px; }
 
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: rgba(50,48,47,0.55); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            width: 100%; max-width: 420px; padding: 32px; border-radius: 18px;
+            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .modal-card h2 { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 24px; }
+        .modal-close {
+            position: absolute; top: 16px; right: 18px;
+            background: none; border: none; color: var(--text-muted);
+            font-size: 22px; cursor: pointer; padding: 4px; line-height: 1;
+            transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--text-main); }
+        .modal-card .form-group { margin-bottom: 18px; }
+        .modal-card label { display: block; font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+        .modal-card input[type="text"], .modal-card select {
+            width: 100%; padding: 11px 14px; font-size: 14px; color: var(--text-main);
+            border: 1px solid var(--border-color); border-radius: 10px;
+            background: var(--bg-dim); outline: none; transition: border-color 0.2s;
+        }
+        .modal-card select { cursor: pointer; }
+        .modal-card input:focus, .modal-card select:focus { border-color: var(--primary-hover); }
+        .modal-card .btn-submit {
+            width: 100%; padding: 12px; background: var(--primary); color: #fff;
+            border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: background 0.2s; margin-top: 4px;
+        }
+        .modal-card .btn-submit:hover { background: var(--primary-hover); }
+        .modal-card .modal-footer { text-align: center; margin-top: 16px; }
+        .modal-card .modal-footer a { color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: none; transition: color 0.2s; }
+        .modal-card .modal-footer a:hover { color: var(--primary-hover); }
+        .modal-card .modal-msg { font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px; padding: 8px 12px; border-radius: 8px; }
+        .modal-card .modal-msg.error { background: rgba(251,73,52,0.1); color: #fb4934; }
+        .modal-card .modal-msg.success { background: rgba(184,187,38,0.1); color: #b8bb26; }
         @media (max-width: 600px) {
             .profile-container { padding: 24px; }
             .mini-grid { grid-template-columns: 1fr; }
@@ -278,9 +416,18 @@ $recent_favs->execute(['id' => $user_id]);
                 <a href="javascript:history.back()" class="back-link"><span class="material-icons" style="font-size:16px;">arrow_back</span> Back</a>
 
                 <div class="profile-header">
-                    <div class="avatar"><?php if (!empty($user['avatar_url'])): ?><img src="<?= htmlspecialchars($user['avatar_url']); ?>" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;"><?php else: ?><span class="material-icons" style="font-size:48px;">person</span><?php endif; ?></div>
+                    <div class="avatar-wrap" id="avatarUploader">
+                        <div class="avatar"><?php if (!empty($user['avatar_url'])): ?><img src="<?= htmlspecialchars($user['avatar_url']); ?>" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;"><?php else: ?><span class="material-icons" style="font-size:48px;">person</span><?php endif; ?></div>
+                        <span class="avatar-plus">+</span>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data" id="avatarForm" style="display:none;">
+                        <input type="file" name="avatar" id="avatarInput" accept="image/jpeg,image/png,image/webp">
+                    </form>
                     <h1><?= htmlspecialchars($user['username']); ?></h1>
+                    <a href="javascript:void(0)" class="edit-link" id="editProfileBtn"><span class="material-icons" style="font-size:14px;">edit</span> Edit profile</a>
                     <span class="role-badge" style="display:inline-block;padding:3px 14px;border-radius:12px;font-size:12px;font-weight:700;margin-top:6px;background:<?= $_SESSION['role'] === 'Admin' ? 'rgba(69,133,136,0.2)' : ($_SESSION['role'] === 'Content Collector' ? 'rgba(214,158,46,0.15)' : 'rgba(168,153,132,0.15)'); ?>;color:<?= $_SESSION['role'] === 'Admin' ? 'var(--primary-hover)' : ($_SESSION['role'] === 'Content Collector' ? '#d79921' : 'var(--text-muted)'); ?>;"><?= htmlspecialchars($_SESSION['role'] ?? 'User'); ?></span>
+                    <?php if ($error): ?><div class="upload-msg error"><?= htmlspecialchars($error); ?></div><?php endif; ?>
+                    <?php if ($success && !isset($_POST['action'])): ?><div class="upload-msg success"><?= htmlspecialchars($success); ?></div><?php endif; ?>
                 </div>
 
                 <div class="info-group">
@@ -389,7 +536,6 @@ $recent_favs->execute(['id' => $user_id]);
                     <a href="../user/my_recipes.php" class="nav-btn-custom nav-primary"><span class="material-icons">description</span> My Recipes</a>
                     <a href="../user/my_favorites.php" class="nav-btn-custom nav-secondary"><span class="material-icons">favorite</span> Favorites</a>
                     <a href="../user/my_reviews.php" class="nav-btn-custom nav-secondary"><span class="material-icons">chat</span> Reviews</a>
-                    <a href="edit_profile.php" class="nav-btn-custom nav-secondary"><span class="material-icons">settings</span> Edit Profile</a>
                     <a href="../crs_app/index.php" class="nav-btn-custom nav-secondary"><span class="material-icons">restaurant</span> Browse</a>
                     <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'Admin' || $_SESSION['role'] === 'Content Collector')): ?>
                         <a href="../crs_app/create.php" class="nav-btn-custom nav-secondary"><span class="material-icons">add_circle</span> New Recipe</a>
@@ -400,8 +546,71 @@ $recent_favs->execute(['id' => $user_id]);
                     <a href="logout.php" class="nav-btn-custom nav-danger"><span class="material-icons">logout</span> Log Out</a>
                 </div>
             </div>
+
+            <!-- Edit Profile Modal -->
+            <div class="modal-overlay <?= isset($_POST['action']) && $_POST['action'] === 'update_profile' ? 'open' : ''; ?>" id="editModal">
+                <div class="modal-card">
+                    <button class="modal-close" id="editModalClose">&times;</button>
+                    <h2>Edit Profile</h2>
+                    <?php if ($error && isset($_POST['action']) && $_POST['action'] === 'update_profile'): ?>
+                        <div class="modal-msg error"><?= htmlspecialchars($error); ?></div>
+                    <?php elseif ($success && isset($_POST['action']) && $_POST['action'] === 'update_profile'): ?>
+                        <div class="modal-msg success"><?= htmlspecialchars($success); ?></div>
+                    <?php endif; ?>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="update_profile">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" required value="<?= htmlspecialchars($user['username']); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select name="gender">
+                                <option value="">Prefer not to say</option>
+                                <option value="Male" <?= ($user['gender'] ?? '') === 'Male' ? 'selected' : ''; ?>>Male</option>
+                                <option value="Female" <?= ($user['gender'] ?? '') === 'Female' ? 'selected' : ''; ?>>Female</option>
+                                <option value="Other" <?= ($user['gender'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Pronouns</label>
+                            <input type="text" name="pronouns" placeholder="e.g. they/them, she/her, he/him" value="<?= htmlspecialchars($user['pronouns'] ?? ''); ?>">
+                        </div>
+                        <button type="submit" class="btn-submit">Save Changes</button>
+                    </form>
+                    <div class="modal-footer">
+                        <a href="change_password.php">Change Password</a>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 <?php include '../../includes/footer.php'; ?>
+<script>
+(function() {
+    const uploader = document.getElementById('avatarUploader');
+    const input = document.getElementById('avatarInput');
+    const form = document.getElementById('avatarForm');
+    if (uploader && input && form) {
+        uploader.addEventListener('click', function() { input.click(); });
+        input.addEventListener('change', function() {
+            if (input.files && input.files[0]) form.submit();
+        });
+    }
+
+    const modal = document.getElementById('editModal');
+    const openBtn = document.getElementById('editProfileBtn');
+    const closeBtn = document.getElementById('editModalClose');
+    if (modal && openBtn && closeBtn) {
+        function openModal() { modal.classList.add('open'); }
+        function closeModal() { modal.classList.remove('open'); }
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+    }
+})();
+</script>
 </body>
 </html>

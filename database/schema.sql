@@ -45,6 +45,8 @@ CREATE TABLE `users` (
     `avatar_url` VARCHAR(500) NULL,
     `password_hash` VARCHAR(255) NOT NULL,
     `role` VARCHAR(255) NOT NULL DEFAULT 'User',
+    `gender` VARCHAR(20) NULL,
+    `pronouns` VARCHAR(50) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (`user_id`),
     UNIQUE KEY `users_email_key` (`email`)
