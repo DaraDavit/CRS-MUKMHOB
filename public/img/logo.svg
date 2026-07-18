@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 54" width="190" height="54">
   <!-- MUK MHOB -->
-  <text x="0" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#d65d3c" letter-spacing="2">MUK</text>
-  <text x="84" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#ebdbb2" letter-spacing="2">MHOB</text>
+  <text x="0" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#d65d3c" letter-spacing="2" text-rendering="geometricPrecision">MUK</text>
+  <text x="84" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#ebdbb2" letter-spacing="2" text-rendering="geometricPrecision">MHOB</text>
   
   <!-- Separator line -->
   <line x1="0" y1="32" x2="188" y2="32" stroke="#a89984" stroke-width="0.5" opacity="0.4"/>

@@ -39,7 +39,14 @@ $base_url = $pub_pos !== false ? substr(dirname($_SERVER['PHP_SELF']), 0, $pub_p
 </style>
 <footer class="site-footer">
     <div class="footer-inner">
-        <div class="footer-brand"><img src="<?= $base_url; ?>/img/logo.svg" alt="MUK MHOB" style="height:24px;"></div>
+        <div class="footer-brand">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 54" height="24" width="auto" style="display:block;">
+        <text x="0" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#d65d3c" letter-spacing="2">MUK</text>
+        <text x="84" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="var(--text-main)" letter-spacing="2">MHOB</text>
+        <line x1="0" y1="32" x2="188" y2="32" stroke="var(--text-muted)" stroke-width="0.5" opacity="0.4"/>
+        <text x="0" y="46" font-family="system-ui,-apple-system,sans-serif" font-weight="500" font-size="9" fill="var(--text-muted)" letter-spacing="1.5">COOKING RECIPES SYSTEM</text>
+    </svg>
+</div>
         <div class="footer-links">
             <a href="<?= $prefix; ?>terms.php">Terms</a>
             <span class="sep">·</span>

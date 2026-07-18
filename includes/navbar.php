@@ -152,7 +152,14 @@ $base_url = $pub_pos !== false ? substr(dirname($_SERVER['PHP_SELF']), 0, $pub_p
 
 <header class="navbar-header">
     <div class="nav-left">
-        <a href="<?= $prefix; ?>index.php" class="nav-logo"><img src="<?= $base_url; ?>/img/logo.svg" alt="MUK MHOB"></a>
+        <a href="<?= $prefix; ?>index.php" class="nav-logo" style="text-decoration:none;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 54" height="43" width="auto" style="display:block;">
+        <text x="0" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="#d65d3c" letter-spacing="2">MUK</text>
+        <text x="84" y="24" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="22" fill="var(--text-main)" letter-spacing="2">MHOB</text>
+        <line x1="0" y1="32" x2="188" y2="32" stroke="var(--text-muted)" stroke-width="0.5" opacity="0.4"/>
+        <text x="0" y="46" font-family="system-ui,-apple-system,sans-serif" font-weight="500" font-size="9" fill="var(--text-muted)" letter-spacing="1.5">COOKING RECIPES SYSTEM</text>
+    </svg>
+</a>
     </div>
 
     <div class="nav-center">

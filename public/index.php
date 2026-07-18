@@ -31,29 +31,14 @@ foreach ($top_rated as $s) {
 }
 
 $food_types = $conn->query("SELECT * FROM food_types ORDER BY name")->fetchAll();
-
-$user_stats = [];
-if (isset($_SESSION['user_id'])) {
-    $uid = $_SESSION['user_id'];
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM recipes WHERE user_id = ?");
-    $stmt->execute([$uid]);
-    $user_stats['recipes'] = $stmt->fetchColumn();
-
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM reviews WHERE user_id = ?");
-    $stmt->execute([$uid]);
-    $user_stats['reviews'] = $stmt->fetchColumn();
-
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM favorite_recipes WHERE user_id = ?");
-    $stmt->execute([$uid]);
-    $user_stats['favorites'] = $stmt->fetchColumn();
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MUK MHOB — Discover Recipes</title>
+    <title>MUK MHOB — Cooking Recipes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { box-sizing:border-box; margin:0; padding:0; }
         body { background:var(--bg-color); color:var(--text-main); font-family:var(--font-stack); -webkit-font-smoothing:antialiased; transition:background .3s,color .3s; }
@@ -80,16 +65,6 @@ if (isset($_SESSION['user_id'])) {
         .hero { background: linear-gradient(135deg, #2d2a29 0%, #3c3836 50%, #282828 100%); }
         [data-theme="light"] .hero { background: linear-gradient(135deg, #f6f1eb 0%, #f0ebe4 50%, #eae3da 100%); }
         <?php endif; ?>
-        .hero-arrow {
-            position:absolute; top:50%; z-index:3; transform:translateY(-50%);
-            background:rgba(0,0,0,0.3); border:none; color:#fff;
-            font-size:28px; width:44px; height:44px; border-radius:50%;
-            cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center;
-            line-height:1;
-        }
-        .hero-arrow:hover { background:rgba(0,0,0,0.6); transform:translateY(-50%) scale(1.1); }
-        .hero-arrow.prev { left:16px; }
-        .hero-arrow.next { right:16px; }
         .hero-dots {
             position:absolute; bottom:16px; left:50%; z-index:3;
             transform:translateX(-50%); display:flex; gap:8px;
@@ -188,41 +163,33 @@ if (isset($_SESSION['user_id'])) {
             background:rgba(204,106,76,0.1); color:var(--primary);
         }
 
-        /* User bar */
-        .user-bar {
-            background:var(--card-bg); border:1px solid var(--border-color);
-            border-radius:14px; padding:24px; margin-bottom:32px;
-            display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
-        }
-        .user-bar .greeting { display:flex; align-items:center; gap:12px; }
-        .user-bar .avatar {
-            width:48px; height:48px; border-radius:50%;
-            background:var(--primary); color:#fff;
-            display:flex; align-items:center; justify-content:center;
-            font-size:20px; font-weight:800;
-        }
-        .user-bar .greeting h3 { font-size:18px; font-weight:700; color:var(--text-main); }
-        .user-bar .greeting p { font-size:13px; color:var(--text-muted); }
-        .user-bar .stats { display:flex; gap:16px; }
-        .user-bar .stat { text-align:center; }
-        .user-bar .stat .num { font-size:22px; font-weight:800; color:var(--primary); }
-        .user-bar .stat .lbl { font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:.5px; }
-        .user-bar .links { display:flex; gap:8px; }
-        .user-bar .links a {
-            padding:8px 16px; border-radius:8px; font-weight:600; font-size:13px;
-            text-decoration:none; transition:all .2s;
-        }
-        .user-link { background:var(--primary); color:#fff; }
-        .user-link:hover { background:var(--primary-hover); }
-        .user-link-sec { border:1px solid var(--border-color); color:var(--text-muted); }
-        .user-link-sec:hover { border-color:var(--primary); color:var(--primary); }
-
         @media (max-width:700px) {
             .hero h1 { font-size:28px; }
             .section { padding:30px 16px; }
             .card-grid { grid-template-columns:1fr; }
-            .user-bar { flex-direction:column; text-align:center; }
-            .user-bar .greeting { flex-direction:column; }
+            .chips { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:6px; padding-bottom:4px; }
+            .chip { white-space:nowrap; flex-shrink:0; padding:6px 14px; font-size:12px; }
+        }
+       @keyframes toastIn { 
+        from {
+            opacity: 0;
+            transform: translateY(-50px); /* Adjust this distance based on your navbar height */
+        } 
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        } 
+        }
+
+        @keyframes toastOut { 
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        } 
+        to {
+            opacity: 0;
+            transform: translateY(-50px); /* Slides smoothly back into the navbar */
+        } 
         }
     </style>
 </head>
@@ -243,8 +210,6 @@ if (isset($_SESSION['user_id'])) {
             <?php endif; ?>
             <div class="hero-overlay"></div>
             <?php if (count($slides) > 0): ?>
-            <button class="hero-arrow prev" onclick="prevSlide()">‹</button>
-            <button class="hero-arrow next" onclick="nextSlide()">›</button>
             <div class="hero-dots" id="heroDots">
                 <?php for ($i = 0; $i < count($slides); $i++): ?>
                 <button class="hero-dot <?= $i === 0 ? 'active' : ''; ?>" onclick="goSlide(<?= $i; ?>)"></button>
@@ -253,7 +218,6 @@ if (isset($_SESSION['user_id'])) {
             <?php endif; ?>
             <div class="hero-content">
                 <h1><span class="material-icons" style="vertical-align:middle;font-size:32px;">restaurant</span> Discover Delicious Recipes</h1>
-                <p>Explore dishes from every cuisine — from Italian classics to Cambodian street food</p>
                 <form action="crs_app/index.php" method="GET" class="hero-search">
                     <input type="text" name="search" placeholder="Search recipes, cuisines, ingredients...">
                     <button type="submit"><span class="material-icons">search</span></button>
@@ -267,45 +231,27 @@ if (isset($_SESSION['user_id'])) {
             </div>
         </section>
 
-        <!-- LOGGED IN USER BAR -->
         <?php if (isset($_SESSION['user_id'])): ?>
-        <div class="section" style="padding-bottom:0;">
-            <div class="user-bar">
-                <div class="greeting">
-                    <div class="avatar"><?= strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
-                    <div>
-                        <h3>Welcome back, <?= htmlspecialchars($_SESSION['username']); ?>!</h3>
-                        <p>Ready to discover something new?</p>
-                    </div>
+        <div class="fixed top-20 left-0 right-0 z-[999] flex justify-center pointer-events-none">
+            <div id="welcomeToast" class="flex items-center gap-3 bg-[var(--card-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-xl px-5 py-3.5 shadow-2xl cursor-pointer pointer-events-auto animate-[toastIn_0.5s_cubic-bezier(0.34,1.56,0.64,1),toastOut_0.4s_ease_3s_forwards]">
+                <div class="w-9 h-9 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-base font-extrabold shrink-0">
+                    <?= strtoupper(substr($_SESSION['username'], 0, 1)); ?>
                 </div>
-                <div class="stats">
-                    <div class="stat"><div class="num"><?= $user_stats['recipes']; ?></div><div class="lbl">Recipes</div></div>
-                    <div class="stat"><div class="num"><?= $user_stats['favorites']; ?></div><div class="lbl">Favorites</div></div>
-                    <div class="stat"><div class="num"><?= $user_stats['reviews']; ?></div><div class="lbl">Reviews</div></div>
-                </div>
-                <div class="links">
-                    <a href="user/my_recipes.php" class="user-link">My Recipes</a>
-                    <a href="user/my_favorites.php" class="user-link-sec">Favorites</a>
-                    <a href="auth/profile.php" class="user-link-sec">Profile</a>
+                <div class="flex flex-col">
+                    <strong class="text-sm text-[var(--text-main)]">Welcome back, <?= htmlspecialchars($_SESSION['username']); ?>!</strong>
+                    <span class="text-xs text-[var(--text-muted)]">Ready to discover something new?</span>
                 </div>
             </div>
         </div>
         <?php endif; ?>
 
-        <!-- CATEGORY CHIPS -->
+        <!-- EXPLORE CHIPS -->
         <section class="section">
-            <div class="section-header"><h2><span class="material-icons" style="vertical-align:middle;">label</span> Browse by Category</h2><a href="crs_app/index.php" class="see-all">All →</a></div>
+            <div class="section-header"><h2><span class="material-icons" style="vertical-align:middle;">explore</span> Explore</h2><a href="crs_app/index.php" class="see-all">All →</a></div>
             <div class="chips">
                 <?php foreach ($categories as $cat): ?>
                 <a href="crs_app/index.php?category_id=<?= $cat['category_id']; ?>" class="chip"><?= htmlspecialchars($cat['name']); ?></a>
                 <?php endforeach; ?>
-            </div>
-        </section>
-
-        <!-- CUISINE LINKS -->
-        <section class="section">
-            <div class="section-header"><h2><span class="material-icons" style="vertical-align:middle;">language</span> Explore Cuisines</h2><a href="crs_app/index.php" class="see-all">All →</a></div>
-            <div class="chips">
                 <?php foreach ($food_types as $ft): ?>
                 <a href="crs_app/index.php?food_type_id=<?= $ft['food_type_id']; ?>" class="chip"><?= htmlspecialchars($ft['name']); ?></a>
                 <?php endforeach; ?>
@@ -398,8 +344,6 @@ function showSlide(idx) {
     if (dots[currentSlide]) dots[currentSlide].classList.add('active');
     resetAuto();
 }
-window.nextSlide = function() { showSlide(currentSlide + 1); };
-window.prevSlide = function() { showSlide(currentSlide - 1); };
 window.goSlide = function(idx) { showSlide(idx); };
 function resetAuto() {
     clearInterval(autoTimer);
@@ -407,6 +351,7 @@ function resetAuto() {
 }
 if (totalSlides > 1) showSlide(0);
 resetAuto();
+document.getElementById('welcomeToast')?.addEventListener('click', function() { this.style.display = 'none'; });
 </script>
 <?php include '../includes/footer.php'; ?>
 </body>
