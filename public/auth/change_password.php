@@ -1,7 +1,6 @@
 <?php
 session_start();
 require '../../includes/db.php';
-require '../../includes/cloudinary.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -12,49 +11,33 @@ $user_id = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-$query = $conn->prepare("SELECT username, email, avatar_url FROM users WHERE user_id = :id");
-$query->execute(['id' => $user_id]);
-$user = $query->fetch(PDO::FETCH_ASSOC);
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-
-    if (empty($username) || empty($email)) {
-        $error = "Username and email are required.";
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid form submission.";
     } else {
-        // Update username/email
-        if ($username !== $user['username'] || $email !== $user['email']) {
-            $update = $conn->prepare("UPDATE users SET username = :username, email = :email WHERE user_id = :id");
-            $update->execute(['username' => $username, 'email' => $email, 'id' => $user_id]);
-            $_SESSION['username'] = $username;
-        }
+        $current = $_POST['current_password'];
+        $new = $_POST['new_password'];
+        $confirm = $_POST['confirm_password'];
 
-        // Avatar upload
-        if (!$error && isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-            $allowed = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!in_array($_FILES['avatar']['type'], $allowed)) {
-                $error = "Avatar must be JPG, PNG, or WebP.";
-            } elseif ($_FILES['avatar']['size'] > 2 * 1024 * 1024) {
-                $error = "Avatar must be under 2MB.";
+        if (empty($current) || empty($new) || empty($confirm)) {
+            $error = "All fields are required.";
+        } elseif ($new !== $confirm) {
+            $error = "New passwords do not match.";
+        } elseif (strlen($new) < 6) {
+            $error = "New password must be at least 6 characters.";
+        } else {
+            $check = $conn->prepare("SELECT password_hash FROM users WHERE user_id = :id");
+            $check->execute(['id' => $user_id]);
+            $stored = $check->fetch(PDO::FETCH_ASSOC);
+
+            if (!password_verify($current, $stored['password_hash'])) {
+                $error = "Current password is incorrect.";
             } else {
-                $avatar_url = cloudinary_upload($_FILES['avatar']['tmp_name'], 'avatar_' . $user_id, 'crs_app/profiles');
-                if ($avatar_url) {
-                    $upd = $conn->prepare("UPDATE users SET avatar_url = :url WHERE user_id = :id");
-                    $upd->execute(['url' => $avatar_url, 'id' => $user_id]);
-                    if (!empty($user['avatar_url'])) {
-                        cloudinary_delete($user['avatar_url']);
-                    }
-                    $_SESSION['avatar_url'] = $avatar_url;
-                    $user['avatar_url'] = $avatar_url;
-                }
+                $hash = password_hash($new, PASSWORD_BCRYPT);
+                $update = $conn->prepare("UPDATE users SET password_hash = :hash WHERE user_id = :id");
+                $update->execute(['hash' => $hash, 'id' => $user_id]);
+                $success = "Password updated successfully!";
             }
-        }
-
-        if (!$error) {
-            $user['username'] = $username;
-            $user['email'] = $email;
-            $success = "Profile updated successfully!";
         }
     }
 }
@@ -63,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Edit Profile</title>
+    <title>Change Password</title>
     <style>
         :root, [data-theme="light"] {
             --primary: #458588; --primary-hover: #83a598;
@@ -82,15 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-header h1 { font-size:26px; color:var(--text-main); font-weight:800; letter-spacing:-0.75px; }
         .form-group { margin-bottom:20px; }
         label { display:block; font-size:14px; font-weight:600; color:var(--text-main); margin-bottom:8px; }
-        input[type="text"], input[type="email"], input[type="password"], input[type="file"] {
+        input[type="password"] {
             width:100%; padding:13px 16px; font-size:15px; color:var(--text-main);
             border:1px solid var(--border-color); border-radius:10px;
             background:var(--bg-dim); outline:none; transition:all 0.2s ease;
         }
-        input[type="file"] { padding:10px 16px; }
         input:hover { border-color:var(--border-hover); }
         input:focus { border-color:var(--primary-hover); background:var(--bg-dim); box-shadow:0 0 0 3px rgba(69,133,136,0.25); }
-        .avatar-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--border-color); margin:0 auto 12px; display:block; }
         .btn-submit {
             width:100%; padding:14px; background:var(--primary); color:#fff;
             border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
@@ -101,7 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-back:hover { color:var(--primary-hover); }
         .msg-error { background:rgba(251,73,52,0.1); color:#fb4934; border:1px solid rgba(251,73,52,0.2); padding:12px; border-radius:10px; font-size:14px; font-weight:500; margin-bottom:20px; text-align:center; }
         .msg-success { background:rgba(184,187,38,0.1); color:#b8bb26; border:1px solid rgba(184,187,38,0.2); padding:12px; border-radius:10px; font-size:14px; font-weight:500; margin-bottom:20px; text-align:center; }
-        .section-divider { border:none; border-top:1px solid var(--border-color); margin:24px 0; }
     </style>
 </head>
 <body>
@@ -110,35 +90,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="main-content">
         <div class="auth-container">
             <div class="form-header">
-                <h1>Edit Profile</h1>
+                <h1>Change Password</h1>
             </div>
 
             <?php if ($error): ?><div class="msg-error"><?= htmlspecialchars($error); ?></div><?php endif; ?>
             <?php if ($success): ?><div class="msg-success"><?= htmlspecialchars($success); ?></div><?php endif; ?>
 
-            <form method="POST" enctype="multipart/form-data">
-                <?php if (!empty($user['avatar_url'])): ?>
-                <img src="<?= htmlspecialchars($user['avatar_url']); ?>" alt="" class="avatar-preview">
-                <?php endif; ?>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                 <div class="form-group">
-                    <label>Avatar</label>
-                    <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp">
+                    <label>Current Password</label>
+                    <input type="password" name="current_password" required placeholder="••••••••">
                 </div>
                 <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" required value="<?= htmlspecialchars($user['username']); ?>">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required placeholder="At least 6 characters">
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" required value="<?= htmlspecialchars($user['email']); ?>">
+                    <label>Confirm New Password</label>
+                    <input type="password" name="confirm_password" required placeholder="Re-enter new password">
                 </div>
 
-                <button type="submit" class="btn-submit">Save Changes</button>
+                <button type="submit" class="btn-submit">Update Password</button>
             </form>
 
-            <hr class="section-divider">
-            <a href="change_password.php" class="btn-back" style="text-align:center;font-weight:600;">→ Change Password</a>
-            <a href="profile.php" class="btn-back">&larr; Back to Profile</a>
+            <a href="edit_profile.php" class="btn-back">&larr; Back to Edit Profile</a>
+            <a href="profile.php" class="btn-back">← Back to Profile</a>
         </div>
     </main>
 </div>
