@@ -106,6 +106,7 @@ $yt_id = $recipe['youtube_url'] ? youtube_embed_id($recipe['youtube_url']) : nul
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($recipe['name']); ?> — Recipe</title>
     <style>
         :root, [data-theme="light"] {
@@ -178,6 +179,13 @@ $yt_id = $recipe['youtube_url'] ? youtube_embed_id($recipe['youtube_url']) : nul
         }
         .yt-embed { margin-top:16px; }
         .yt-embed iframe { width:100%; max-width:560px; height:315px; border-radius:8px; border:none; }
+        @media (max-width:600px) {
+            .container { padding:20px; }
+            .main-content { padding:20px 12px; }
+            .yt-embed iframe { height:200px; }
+            .meta span { display:inline-block; margin-right:8px; }
+            .review-card .review-header { flex-direction:column; gap:2px; }
+        }
     </style>
 </head>
 <body>
