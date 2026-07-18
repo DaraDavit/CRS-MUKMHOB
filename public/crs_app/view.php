@@ -9,6 +9,11 @@ if (!isset($_GET['id'])) {
 
 $recipe_id = (int)$_GET['id'];
 
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../auth/login.php?redirect=' . urlencode('view.php?id=' . $recipe_id));
+    exit;
+}
+
 if (isset($_GET['favorite']) && isset($_SESSION['user_id'])) {
     $uid = $_SESSION['user_id'];
     if ($_GET['favorite'] === 'add') {

@@ -8,7 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    if (!empty($email) && !empty($password)) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error_message = "Invalid form submission.";
+    } elseif (!empty($email) && !empty($password)) {
         $query = $conn->prepare("SELECT * FROM users WHERE email = :email");
         $query->execute(['email' => $email]);
         $user = $query->fetch(PDO::FETCH_ASSOC);
@@ -19,7 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role'] = $user['role'];
             $_SESSION['avatar_url'] = $user['avatar_url'] ?? '';
             
-            header("Location: ../index.php");
+            $redirect = $_GET['redirect'] ?? '../index.php';
+            if (preg_match('#^https?://#i', $redirect)) {
+                $redirect = '../index.php';
+            }
+            header("Location: $redirect");
             exit;
         } else {
             $error_message = "Invalid Email or Password.";
@@ -117,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <form action="login.php" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                     <div class="form-group">
                         <label>Email address</label>
                         <input type="email" name="email" required placeholder="name@example.com" value="<?php echo htmlspecialchars($email); ?>">
