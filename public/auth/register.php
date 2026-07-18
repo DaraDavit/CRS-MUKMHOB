@@ -11,8 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    if (!empty($username) && !empty($email) && !empty($password)) {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error_message = "Invalid form submission.";
+    } elseif (!empty($username) && !empty($email) && !empty($password)) {
+        if (!isset($_POST['accept_terms'])) {
+            $error_message = "You must agree to the Terms of Service.";
+        } elseif ($_POST['confirm_password'] !== $password) {
+            $error_message = "Passwords do not match.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error_message = "Please enter a valid email address.";
         } else {
             $check_query = $conn->prepare("SELECT * FROM users WHERE username = :username OR email = :email");
@@ -137,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <form action="register.php" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                     <div class="form-group">
                         <label>Username</label>
                         <input type="text" name="username" required placeholder="johndoe" value="<?php echo htmlspecialchars($username); ?>">
@@ -148,6 +155,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label>Password</label>
                         <input type="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" name="confirm_password" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group" style="margin-bottom:24px;">
+                        <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" name="accept_terms" required style="width:16px;height:16px;accent-color:var(--primary);">
+                            I agree to the <a href="../terms.php" target="_blank" style="color:var(--primary-hover);text-decoration:underline;">Terms of Service</a>
+                        </label>
                     </div>
                     <button type="submit" class="btn-submit">Create account</button>
                 </form>
