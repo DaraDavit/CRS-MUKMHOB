@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../../includes/db.php';
+require '../../includes/cloudinary.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header('Location: ../auth/login.php');
@@ -19,6 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quick_create'])) {
     $instructions = trim($_POST['instructions']);
     $youtube_url = trim($_POST['youtube_url'] ?? '');
     $image_url = trim($_POST['image_url'] ?? '');
+    if (empty($image_url) && isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+        $uploaded = cloudinary_upload($_FILES['image_file']['tmp_name']);
+        if ($uploaded) $image_url = $uploaded;
+    }
     $prep_time = !empty($_POST['prep_time_minutes']) ? (int)$_POST['prep_time_minutes'] : null;
     $cook_time = !empty($_POST['cook_time_minutes']) ? (int)$_POST['cook_time_minutes'] : null;
     $uid = $_SESSION['user_id'];
@@ -308,7 +313,7 @@ tr:hover{background:rgba(60,56,54,.3)}
 <div class="fg full"><label>Description</label><textarea name="description" placeholder="Brief description..."></textarea></div>
 <div class="fg full"><label>Instructions <span class="req">*</span></label><textarea name="instructions" required placeholder="Step-by-step instructions..."></textarea></div>
 <div class="fg full"><label>YouTube URL</label><input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..."></div>
-<div class="fg full"><label>Image URL</label><input type="url" name="image_url" placeholder="https://example.com/image.jpg"></div>
+<div class="fg full"><label>Image</label><input type="url" name="image_url" placeholder="https://example.com/image.jpg" style="margin-bottom:6px;"><input type="file" name="image_file" accept="image/*" style="color:var(--muted);font-size:12px;"></div>
 <div class="fg"><label>Prep (min)</label><input type="number" name="prep_time_minutes" min="0" placeholder="15"></div>
 <div class="fg"><label>Cook (min)</label><input type="number" name="cook_time_minutes" min="0" placeholder="30"></div>
 <div class="fg full"><label>Ingredients</label>
