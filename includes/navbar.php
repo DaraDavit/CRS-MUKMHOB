@@ -32,17 +32,23 @@ $base_url = $pub_pos !== false ? substr(dirname($_SERVER['PHP_SELF']), 0, $pub_p
     --navbar-border: rgba(60,56,54,0.6);
 }
 [data-theme="light"] {
-    --bg-color: #fdf6e3;
-    --bg-dim: #f9f5f0;
-    --card-bg: rgba(255,255,255,0.85);
-    --text-main: #3c3836;
-    --text-muted: #7c6f64;
+    --bg-color: #f8f5f0;
+    --bg-dim: #f0ebe4;
+    --card-bg: #ffffff;
+    --text-main: #2d2a28;
+    --text-muted: #8a7f78;
     --primary: #cc6a4c;
     --primary-hover: #b85c3f;
-    --border-color: #e6d5b8;
-    --border-hover: #d5c4a1;
-    --navbar-bg: rgba(255,255,255,0.9);
-    --navbar-border: #e6d5b8;
+    --border-color: #e0d6cc;
+    --border-hover: #d0c4b8;
+    --danger: #c0392b;
+    --danger-hover: #e74c3c;
+    --green: #689d6a;
+    --navbar-bg: rgba(255,255,255,0.92);
+    --navbar-border: #e0d6cc;
+    --gold: #b5895c;
+    --teal: #5a9a9c;
+    --teal-h: #7ab0b2;
 }
 [data-theme="light"] .nav-btn.active {
     color: #fff;

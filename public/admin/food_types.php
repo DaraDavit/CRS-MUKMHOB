@@ -66,6 +66,7 @@ $result->execute($params);
 <head><meta charset="UTF-8"><title>Admin — Food Types</title>
 <style>
 :root{--bg-color:#282828;--bg-dim:#1d2021;--card-bg:rgba(50,48,47,0.7);--text-main:#d79921;--text-muted:#a89984;--primary:#458589;--primary-hover:#83a598;--border-color:rgba(60,56,54,0.6);--font-stack:system-ui,-apple-system,sans-serif;--danger:#cc241d;--danger-hover:#fb4934;}
+[data-theme="light"]{--bg-color:#f8f5f0;--bg-dim:#f0ebe4;--card-bg:#ffffff;--text-main:#4a3b2e;--text-muted:#8a7f78;--primary:#458589;--primary-hover:#83a598;--border-color:#e0d6cc;--font-stack:system-ui,-apple-system,sans-serif;--danger:#c0392b;--danger-hover:#e74c3c;}
 *{box-sizing:border-box;font-family:var(--font-stack);margin:0;padding:0;}
 body{background-color:var(--bg-dim);color:var(--text-muted);-webkit-font-smoothing:antialiased;}
 .page-wrapper{display:flex;flex-direction:column;min-height:100vh;}

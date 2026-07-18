@@ -52,7 +52,7 @@ $opposite_order = $order === 'DESC' ? 'ASC' : 'DESC';
 <html lang="en">
 <head><meta charset="UTF-8"><title>My Favorites</title>
 <style>
-:root{--bg-color:#282828;--bg-dim:#1d2021;--card-bg:rgba(50,48,47,0.7);--text-main:#ebdbb2;--text-muted:#a89984;--primary:#d65d3c;--primary-hover:#e67e52;--border-color:rgba(60,56,54,0.6);--font-stack:system-ui,-apple-system,sans-serif;}
+
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg-dim);color:var(--text-muted);font-family:var(--font-stack);-webkit-font-smoothing:antialiased;}
 .page-wrapper{display:flex;flex-direction:column;min-height:100vh;}

@@ -134,9 +134,7 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
     <meta charset="UTF-8">
     <title>Edit Recipe</title>
     <style>
-        :root {
-            --bg-color: #282828; --bg-dim: #1d2021;
-            --card-bg: rgba(50,48,47,0.7);
+        :root, [data-theme="light"] {
             --primary: #458589; --primary-hover: #83a598;
             --border-color: rgba(60,56,54,0.6); --border-hover: #504945;
             --font-stack: system-ui,-apple-system,sans-serif;
@@ -156,7 +154,7 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
         .form-group { margin-bottom:20px; }
         label { display:block; margin-bottom:8px; font-size:14px; font-weight:600; color:var(--text-main); }
         input[type="text"], input[type="number"], input[type="url"], select, textarea {
-            width:100%; padding:12px 16px; background-color:rgba(29,32,33,0.6);
+            width:100%; padding:12px 16px; background-color:var(--bg-dim);
             border:1px solid var(--border-color); color:var(--text-main);
             border-radius:10px; font-size:15px; outline:none; transition:all 0.2s ease;
         }
@@ -310,7 +308,7 @@ while ($row = $recipe_cats->fetch()) $selected_cats[] = $row['category_id'];
                 </div>
 
                 <style>
-                .cat-tag { display:inline-flex; align-items:center; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:rgba(29,32,33,0.4); border:1px solid var(--border-color); color:var(--text-muted); transition:all 0.15s ease; user-select:none; }
+                .cat-tag { display:inline-flex; align-items:center; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-muted); transition:all 0.15s ease; user-select:none; }
                 .cat-tag:hover { border-color:var(--primary-hover); color:var(--text-main); }
                 .cat-tag input { display:none; }
                 .cat-tag.checked { background:rgba(69,133,137,0.2); border-color:var(--primary-hover); color:var(--primary-hover); }

@@ -78,7 +78,7 @@ if (isset($_SESSION['user_id'])) {
         <?php endforeach; ?>
         <?php if (count($slides) === 0): ?>
         .hero { background: linear-gradient(135deg, #2d2a29 0%, #3c3836 50%, #282828 100%); }
-        [data-theme="light"] .hero { background: linear-gradient(135deg, #fdf6e3 0%, #f9f5f0 50%, #f5edd6 100%); }
+        [data-theme="light"] .hero { background: linear-gradient(135deg, #f6f1eb 0%, #f0ebe4 50%, #eae3da 100%); }
         <?php endif; ?>
         .hero-arrow {
             position:absolute; top:50%; z-index:3; transform:translateY(-50%);
@@ -105,13 +105,13 @@ if (isset($_SESSION['user_id'])) {
             pointer-events:none;
         }
         [data-theme="light"] .hero-overlay {
-            background: rgba(253,246,227,0.7);
+            background: rgba(248,245,240,0.75);
         }
         .hero-content { position:relative; z-index:2; width:100%; max-width:650px; }
         .hero h1 { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -1px; text-shadow:0 2px 8px rgba(0,0,0,0.3); }
-        [data-theme="light"] .hero h1 { color: #2d2a29; }
+        [data-theme="light"] .hero h1 { color: #2d2a28; }
         .hero p { font-size: 16px; color: rgba(255,255,255,0.8); margin-bottom: 24px; }
-        [data-theme="light"] .hero p { color: rgba(0,0,0,0.6); }
+        [data-theme="light"] .hero p { color: #8a7f78; }
         .hero-search {
             display: flex; max-width: 500px; margin: 0 auto;
             border-radius: 50px; overflow: hidden;
@@ -134,11 +134,12 @@ if (isset($_SESSION['user_id'])) {
         .hero-btn {
             padding:12px 28px; border-radius:50px; font-weight:700; font-size:14px;
             text-decoration:none; transition:all .2s; display:inline-block;
+            background-color: var(--primary);
         }
         .hero-btn-primary { background:var(--primary); color:#fff; }
         .hero-btn-primary:hover { background:var(--primary-hover); transform:translateY(-2px); }
-        .hero-btn-secondary { border:1px solid var(--border-color); color:var(--text-muted); }
-        .hero-btn-secondary:hover { border-color:var(--primary); color:var(--primary); }
+        .hero-btn-secondary { border:1px solid var(--border-color); color:var(--text-main); }
+        .hero-btn-secondary:hover { border-color:var(--primary); color:var(--text-main); transform:translateY(-2px); }
 
         /* Sections */
         .section { padding:40px 24px; max-width:1200px; margin:0 auto; }

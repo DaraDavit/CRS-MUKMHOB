@@ -47,16 +47,9 @@ $recent_favs->execute(['id' => $user_id]);
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --bg-color: #282828;
-            --bg-dim: #1d2021;
-            --card-bg: rgba(50, 48, 47, 0.7);
-            --text-main: #ebdbb2;
-            --text-muted: #a89984;
+        :root, [data-theme="light"] {
             --primary: #458588;
             --primary-hover: #83a598;
-            --border-color: rgba(60, 56, 54, 0.6);
-            --font-stack: system-ui, -apple-system, sans-serif;
             --green: #b8bb26;
             --gold: #d79921;
         }
@@ -91,7 +84,7 @@ $recent_favs->execute(['id' => $user_id]);
         .avatar {
             width: 80px;
             height: 80px;
-            background: rgba(29, 32, 33, 0.6);
+            background: var(--bg-dim);
             border: 2px solid var(--border-color);
             border-radius: 50%;
             display: flex;
@@ -256,7 +249,7 @@ $recent_favs->execute(['id' => $user_id]);
             cursor: pointer;
         }
         .nav-btn-custom:hover { transform: translateY(-1px); }
-        .nav-primary { background: var(--primary); color: var(--bg-dim); }
+        .nav-primary { background: var(--primary); color: #fff; }
         .nav-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(69, 133, 136, 0.3); }
         .nav-secondary { background: rgba(131, 165, 152, 0.15); color: var(--primary-hover); border: 1px solid rgba(131, 165, 152, 0.2); }
         .nav-secondary:hover { background: rgba(131, 165, 152, 0.25); }

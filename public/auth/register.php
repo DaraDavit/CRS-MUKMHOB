@@ -46,17 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --bg-color: #282828;
-            --bg-dim: #1d2021;
-            --card-bg: rgba(50, 48, 47, 0.7);
-            --text-muted: #a89984;
+        :root, [data-theme="light"] {
             --primary: #458588;
-            --primary-hover: #d79921;
-            --border-color: rgba(60, 56, 54, 0.6);
-            --border-hover: #504945;
-            --font-stack: system-ui, -apple-system, sans-serif;
         }
+        :root { --primary-hover: #d79921; }
+        [data-theme="light"] { --primary-hover: #83a598; }
 
         body {
             background-color: var(--bg-color);
@@ -92,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         input[type="text"], input[type="email"], input[type="password"] {
             width: 100%; padding: 13px 16px; font-size: 15px; color: var(--text-main);
             border: 1px solid var(--border-color); border-radius: 10px;
-            background-color: rgba(29, 32, 33, 0.6); outline: none; transition: all 0.2s ease;
+            background-color: var(--bg-dim); outline: none; transition: all 0.2s ease;
         }
         input:hover { border-color: var(--border-hover); }
         input:focus { border-color: var(--primary-hover); background-color: var(--bg-dim); box-shadow: 0 0 0 3px rgba(69, 133, 136, 0.25); }

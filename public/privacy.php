@@ -11,7 +11,7 @@ require '../includes/db.php';
     <style>
         * { box-sizing:border-box; margin:0; padding:0; }
         body { background:var(--bg-color); color:var(--text-main); font-family:var(--font-stack); -webkit-font-smoothing:antialiased; }
-        :root { --bg-color:#282828; --bg-dim:#1d2021; --card-bg:rgba(50,48,47,0.7); --text-main:#ebdbb2; --text-muted:#a89984; --primary:#d65d3c; --primary-hover:#e67e52; --border-color:rgba(60,56,54,0.6); --font-stack:system-ui,-apple-system,sans-serif; }
+
         .page-wrapper { display:flex; flex-direction:column; min-height:100vh; }
         .main-content { flex:1; padding:40px 24px; display:flex; justify-content:center; }
         .container { max-width:720px; width:100%; background:var(--card-bg); padding:36px; border-radius:12px; border:1px solid var(--border-color); backdrop-filter:blur(16px); }

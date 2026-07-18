@@ -103,13 +103,8 @@ $yt_id = $recipe['youtube_url'] ? youtube_embed_id($recipe['youtube_url']) : nul
     <meta charset="UTF-8">
     <title><?= htmlspecialchars($recipe['name']); ?> — Recipe</title>
     <style>
-        :root {
-            --bg-color: #282828; --bg-dim: #1d2021;
-            --card-bg: rgba(50,48,47,0.7);
+        :root, [data-theme="light"] {
             --primary: #458589; --primary-hover: #83a598;
-            --border-color: rgba(60,56,54,0.6);
-            --font-stack: system-ui,-apple-system,sans-serif;
-            --danger: #cc241d; --danger-hover: #fb4934;
         }
         * { box-sizing:border-box; font-family:var(--font-stack); margin:0; padding:0; }
         body { background-color:var(--bg-dim); color:var(--text-muted); -webkit-font-smoothing:antialiased; }

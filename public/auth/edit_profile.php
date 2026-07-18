@@ -86,13 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Edit Profile</title>
     <style>
-        :root {
-            --bg-color: #282828; --bg-dim: #1d2021;
-            --card-bg: rgba(50,48,47,0.7);
+        :root, [data-theme="light"] {
             --primary: #458588; --primary-hover: #83a598;
-            --border-color: rgba(60,56,54,0.6);
-            --border-hover: #504945;
-            --font-stack: system-ui,-apple-system,sans-serif;
         }
         * { box-sizing:border-box; font-family:var(--font-stack); margin:0; padding:0; }
         body { background-color:var(--bg-color); color:var(--text-muted); -webkit-font-smoothing:antialiased; }
@@ -111,14 +106,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         input[type="text"], input[type="email"], input[type="password"], input[type="file"] {
             width:100%; padding:13px 16px; font-size:15px; color:var(--text-main);
             border:1px solid var(--border-color); border-radius:10px;
-             outline:none; transition:all 0.2s ease;
+            background:var(--bg-dim); outline:none; transition:all 0.2s ease;
         }
         input[type="file"] { padding:10px 16px; }
         input:hover { border-color:var(--border-hover); }
         input:focus { border-color:var(--primary-hover); background:var(--bg-dim); box-shadow:0 0 0 3px rgba(69,133,136,0.25); }
         .avatar-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--border-color); margin:0 auto 12px; display:block; }
         .btn-submit {
-            width:100%; padding:14px; background:var(--primary); color:var(--bg-dim);
+            width:100%; padding:14px; background:var(--primary); color:#fff;
             border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
             box-shadow:0 4px 14px rgba(69,133,136,0.3); transition:all 0.2s ease; margin-top:10px;
         }

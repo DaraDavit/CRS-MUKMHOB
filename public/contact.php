@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         * { box-sizing:border-box; margin:0; padding:0; }
         body { background:var(--bg-color); color:var(--text-main); font-family:var(--font-stack); -webkit-font-smoothing:antialiased; }
-        :root { --bg-color:#282828; --bg-dim:#1d2021; --card-bg:rgba(50,48,47,0.7); --text-main:#ebdbb2; --text-muted:#a89984; --primary:#d65d3c; --primary-hover:#e67e52; --border-color:rgba(60,56,54,0.6); --border-hover:#504945; --font-stack:system-ui,-apple-system,sans-serif; }
+
         .page-wrapper { display:flex; flex-direction:column; min-height:100vh; }
         .main-content { flex:1; padding:40px 24px; display:flex; justify-content:center; }
         .container { max-width:560px; width:100%; background:var(--card-bg); padding:36px; border-radius:12px; border:1px solid var(--border-color); backdrop-filter:blur(16px); }
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .sub { font-size:14px; color:var(--text-muted); margin-bottom:24px; }
         .form-group { margin-bottom:16px; }
         label { display:block; font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:4px; }
-        input, textarea { width:100%; padding:12px 14px; border-radius:8px; border:1px solid var(--border-color); background:rgba(29,32,33,0.6); color:var(--text-main); font-size:14px; outline:none; transition:all .2s; }
+        input, textarea { width:100%; padding:12px 14px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-dim); color:var(--text-main); font-size:14px; outline:none; transition:all .2s; }
         input:focus, textarea:focus { border-color:var(--primary-hover); box-shadow:0 0 0 3px rgba(214,93,60,0.15); }
         textarea { min-height:120px; resize:vertical; }
         .btn { width:100%; padding:14px; border:none; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer; background:var(--primary); color:#fff; transition:all .2s; }
