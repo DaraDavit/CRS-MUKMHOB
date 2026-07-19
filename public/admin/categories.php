@@ -9,14 +9,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 
 $msg = '';
 if (isset($_POST['add'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $msg = "Invalid form submission.";
+    } else {
     $n = trim($_POST['name']);
     if (!empty($n)) { $s = $conn->prepare("INSERT INTO categories (name) VALUES (?)"); $s->execute([$n]); $msg = "Category added."; }
+    }
 }
 if (isset($_POST['edit'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $msg = "Invalid form submission.";
+    } else {
     $id = (int)$_POST['id']; $n = trim($_POST['name']);
     if (!empty($n)) { $s = $conn->prepare("UPDATE categories SET name = ? WHERE category_id = ?"); $s->execute([$n, $id]); $msg = "Category updated."; }
+    }
 }
 if (isset($_GET['delete'])) {
+    if (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== $_SESSION['csrf_token']) {
+        $msg = "Invalid request.";
+        header("Location: categories.php");
+        exit;
+    }
     $id = (int)$_GET['delete'];
     $conn->prepare("DELETE FROM categories WHERE category_id = ?")->execute([$id]);
     $msg = "Category deleted.";
@@ -100,6 +113,7 @@ tr:hover{background:rgba(60,56,54,.3)}
 <?php if ($msg): ?><div class="alert"><?= htmlspecialchars($msg); ?></div><?php endif; ?>
 
 <form method="POST" class="inline-form">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
     <?php if ($edit_row): ?><input type="hidden" name="id" value="<?= $edit_row['category_id']; ?>"><?php endif; ?>
     <input type="text" name="name" required placeholder="Category name" value="<?= $edit_row ? htmlspecialchars($edit_row['name']) : ''; ?>">
     <button type="submit" name="<?= $edit_row ? 'edit' : 'add'; ?>" class="btn btn-p"><?= $edit_row ? 'Update' : 'Add'; ?></button>
@@ -130,7 +144,7 @@ tr:hover{background:rgba(60,56,54,.3)}
     <thead><tr><th>ID</th><th>Name</th><th>Used In</th><th>Actions</th></tr></thead>
     <tbody>
         <?php while ($r = $result->fetch()): ?>
-        <tr><td><?= $r['category_id']; ?></td><td><strong style="color:var(--teal-h);"><?= htmlspecialchars($r['name']); ?></strong></td><td><span class="badge"><?= $r['usage_count']; ?> recipes</span></td><td><a href="categories.php?edit=<?= $r['category_id']; ?>" class="btn-xs btn-e">Edit</a> <a href="categories.php?delete=<?= $r['category_id']; ?>" class="btn-xs btn-d" onclick="return confirm('Delete?')">Delete</a></td></tr>
+        <tr><td><?= $r['category_id']; ?></td><td><strong style="color:var(--teal-h);"><?= htmlspecialchars($r['name']); ?></strong></td><td><span class="badge"><?= $r['usage_count']; ?> recipes</span></td><td><a href="categories.php?edit=<?= $r['category_id']; ?>" class="btn-xs btn-e">Edit</a> <a href="categories.php?delete=<?= $r['category_id']; ?>&csrf_token=<?= $_SESSION['csrf_token']; ?>" class="btn-xs btn-d" onclick="return confirm('Delete?')">Delete</a></td></tr>
         <?php endwhile; ?>
     </tbody>
 </table>

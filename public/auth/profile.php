@@ -14,6 +14,9 @@ $success = '';
 
 // Profile update handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid form submission.";
+    } else {
     $new_username = trim($_POST['username']);
     $gender = $_POST['gender'] ?? '';
     $pronouns = trim($_POST['pronouns'] ?? '');
@@ -28,10 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $user['gender'] = $gender;
         $user['pronouns'] = $pronouns;
     }
+    }
 }
 
 // Avatar upload handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid form submission.";
+    } else {
     $allowed = ['image/jpeg', 'image/png', 'image/webp'];
     if (!in_array($_FILES['avatar']['type'], $allowed)) {
         $error = "Avatar must be JPG, PNG, or WebP.";
@@ -51,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar']) && $_FILES
         } else {
             $error = "Upload failed. Check Cloudinary config.";
         }
+    }
     }
 }
 
@@ -421,6 +429,7 @@ $recent_favs->execute(['id' => $user_id]);
                         <span class="avatar-plus">+</span>
                     </div>
                     <form method="POST" enctype="multipart/form-data" id="avatarForm" style="display:none;">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                         <input type="file" name="avatar" id="avatarInput" accept="image/jpeg,image/png,image/webp">
                     </form>
                     <h1><?= htmlspecialchars($user['username']); ?></h1>
@@ -559,6 +568,7 @@ $recent_favs->execute(['id' => $user_id]);
                     <?php endif; ?>
                     <form method="POST">
                         <input type="hidden" name="action" value="update_profile">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                         <div class="form-group">
                             <label>Username</label>
                             <input type="text" name="username" required value="<?= htmlspecialchars($user['username']); ?>">

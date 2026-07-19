@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 
 if (isset($_POST['edit'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid form submission.";
+    } else {
     $id = (int)$_POST['id'];
     $name = trim($_POST['name']);
     $cal = !empty($_POST['calories_per_100g']) ? (int)$_POST['calories_per_100g'] : null;
@@ -19,6 +22,7 @@ if (isset($_POST['edit'])) {
         header("Location: ingredients.php");
         exit;
     }
+    }
 }
 if (isset($_GET['edit'])) {
     $eid = (int)$_GET['edit'];
@@ -27,6 +31,11 @@ if (isset($_GET['edit'])) {
     $editing = $r->fetch();
 }
 if (isset($_GET['delete'])) {
+    if (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid request.";
+        header("Location: ingredients.php");
+        exit;
+    }
     $id = (int)$_GET['delete'];
     $r = $conn->prepare("SELECT COUNT(*) AS c FROM recipe_ingredients WHERE ingredient_id = ?");
     $r->execute([$id]);
@@ -111,6 +120,7 @@ tr:hover{background:rgba(60,56,54,0.3);}
 
 <?php if (isset($editing) && $editing): ?>
 <form method="POST" class="form-inline" style="gap:6px;">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
     <input type="hidden" name="id" value="<?= $editing['ingredient_id']; ?>">
     <input type="text" name="name" required value="<?= htmlspecialchars($editing['name']); ?>" style="flex:1;min-width:160px;">
     <input type="number" name="calories_per_100g" placeholder="Cal/100g" value="<?= $editing['calories_per_100g']; ?>" style="width:80px;padding:10px 8px;border-radius:8px;border:1px solid var(--border-color);background:rgba(29,32,33,0.6);color:var(--text-main);font-size:13px;outline:none;">
@@ -154,7 +164,7 @@ tr:hover{background:rgba(60,56,54,0.3);}
             <td><?= $ing['usage_count']; ?></td>
             <td style="white-space:nowrap;">
                 <a href="ingredients.php?edit=<?= $ing['ingredient_id']; ?>" class="btn-sm btn-edit">Edit</a>
-                <a href="ingredients.php?delete=<?= $ing['ingredient_id']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($ing['name']); ?>?')">Delete</a>
+                <a href="ingredients.php?delete=<?= $ing['ingredient_id']; ?>&csrf_token=<?= $_SESSION['csrf_token']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($ing['name']); ?>?')">Delete</a>
             </td>
         </tr>
         <?php endwhile; ?>

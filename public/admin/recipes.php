@@ -266,7 +266,7 @@ tr:hover{background:rgba(60,56,54,.3)}
 <td style="white-space:nowrap;">
 <a href="../crs_app/view.php?id=<?= $r['recipe_id']; ?>" class="btn-sm btn-view">View</a>
 <a href="../crs_app/edit.php?id=<?= $r['recipe_id']; ?>" class="btn-sm btn-view" style="background:var(--gold);color:var(--bg-dim);">Edit</a>
-<a href="../crs_app/delete.php?id=<?= $r['recipe_id']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($r['name']); ?>?')">Delete</a>
+<a href="../crs_app/delete.php?id=<?= $r['recipe_id']; ?>&csrf_token=<?= $_SESSION['csrf_token']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($r['name']); ?>?')">Delete</a>
 </td>
 </tr>
 <?php endwhile; ?>

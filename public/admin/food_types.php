@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 
 if (isset($_POST['add'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid form submission.";
+    } else {
     $name = trim($_POST['name']);
     if (!empty($name)) {
         $stmt = $conn->prepare("INSERT INTO food_types (name) VALUES (?)");
@@ -16,10 +19,14 @@ if (isset($_POST['add'])) {
         header("Location: food_types.php");
         exit;
     }
+    }
 }
 
 $editing = null;
 if (isset($_POST['edit'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid form submission.";
+    } else {
     $id = (int)$_POST['id'];
     $name = trim($_POST['name']);
     if (!empty($name)) {
@@ -29,6 +36,7 @@ if (isset($_POST['edit'])) {
         header("Location: food_types.php");
         exit;
     }
+    }
 }
 if (isset($_GET['edit'])) {
     $eid = (int)$_GET['edit'];
@@ -37,6 +45,11 @@ if (isset($_GET['edit'])) {
     $editing = $r->fetch();
 }
 if (isset($_GET['delete'])) {
+    if (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid request.";
+        header("Location: food_types.php");
+        exit;
+    }
     $id = (int)$_GET['delete'];
     $conn->prepare("DELETE FROM food_types WHERE food_type_id = ?")->execute([$id]);
     $_SESSION['message'] = "Food type deleted.";
@@ -117,6 +130,7 @@ tr:hover{background:rgba(60,56,54,0.3);}
 <?php if (isset($_SESSION['message'])): ?><div class="alert"><?= htmlspecialchars($_SESSION['message']); ?><?php unset($_SESSION['message']); ?></div><?php endif; ?>
 
 <form method="POST" class="form-inline">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
     <?php if ($editing): ?>
         <input type="hidden" name="id" value="<?= $editing['food_type_id']; ?>">
     <?php endif; ?>
@@ -159,7 +173,7 @@ tr:hover{background:rgba(60,56,54,0.3);}
             <td><?= $ft['region_count']; ?></td>
             <td style="white-space:nowrap;">
                 <a href="food_types.php?edit=<?= $ft['food_type_id']; ?>" class="btn-sm btn-edit">Edit</a>
-                <a href="food_types.php?delete=<?= $ft['food_type_id']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($ft['name']); ?>?')">Delete</a>
+                <a href="food_types.php?delete=<?= $ft['food_type_id']; ?>&csrf_token=<?= $_SESSION['csrf_token']; ?>" class="btn-sm btn-del" onclick="return confirm('Delete <?= htmlspecialchars($ft['name']); ?>?')">Delete</a>
             </td>
         </tr>
         <?php endwhile; ?>

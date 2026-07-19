@@ -114,8 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="btn-submit">Update Password</button>
             </form>
 
-            <a href="edit_profile.php" class="btn-back">&larr; Back to Edit Profile</a>
-            <a href="profile.php" class="btn-back">← Back to Profile</a>
+            <a href="profile.php" class="btn-back">&larr; Back to Profile</a>
         </div>
     </main>
 </div>

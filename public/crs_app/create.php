@@ -26,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         if (empty($name) || empty($instructions) || empty($country_id)) {
             $error = "Name, instructions, and country are required.";
         } else {
+            $user_id = $_SESSION['user_id'];
+            $prep_time = !empty($_POST['prep_time_minutes']) ? (int)$_POST['prep_time_minutes'] : null;
+            $cook_time = !empty($_POST['cook_time_minutes']) ? (int)$_POST['cook_time_minutes'] : null;
             $conn->beginTransaction();
             try {
                 $stmt = $conn->prepare("INSERT INTO recipes (name, user_id, country_id, description, instructions, youtube_url, image_url, prep_time_minutes, cook_time_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -45,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                     if (empty($ing_name)) continue;
                     $qty = null; $unit = $amt;
                     if (preg_match('/^([\d\.\/\s]+)\s+(.+)$/', $amt, $m)) { $qty = $m[1]; $unit = $m[2]; }
+                    if ($qty === null) { $qty = 0; $unit = $amt; }
 
                     $find_ing->execute([$ing_name]);
                     $row = $find_ing->fetch();

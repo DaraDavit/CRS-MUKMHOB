@@ -28,8 +28,14 @@ if (isset($_GET['favorite']) && isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['review_submit']) && isset($_SESSION['user_id'])) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['message'] = "Invalid form submission.";
+        header("Location: view.php?id=$recipe_id");
+        exit;
+    }
     $uid = $_SESSION['user_id'];
     $rating = (int)$_POST['rating'];
+    if ($rating < 1 || $rating > 5) $rating = 5;
     $comment = trim($_POST['comment']);
     $s = $conn->prepare("INSERT INTO reviews (recipe_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
     try {
@@ -311,6 +317,7 @@ $yt_id = $recipe['youtube_url'] ? youtube_embed_id($recipe['youtube_url']) : nul
                     <div class="review-form">
                         <h4 style="color:var(--text-main); margin-bottom:12px; font-size:15px;">Write a Review</h4>
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
                             <select name="rating" required>
                                 <option value="">Rating</option>
                                 <?php for ($i = 1; $i <= 5; $i++): ?>
@@ -330,6 +337,9 @@ $yt_id = $recipe['youtube_url'] ? youtube_embed_id($recipe['youtube_url']) : nul
                     <a href="view.php?id=<?= $recipe_id; ?>&favorite=<?= $is_favorited ? 'remove' : 'add'; ?>" class="btn btn-fav <?= $is_favorited ? 'active' : ''; ?>">
                         <?= $is_favorited ? '<span class="material-icons" style="vertical-align:middle;">star</span> Favorited' : '<span class="material-icons" style="vertical-align:middle;">star_outline</span> Add to Favorites'; ?>
                     </a>
+                    <?php if ($_SESSION['role'] === 'Admin' || (isset($recipe['user_id']) && (int)$recipe['user_id'] === (int)$_SESSION['user_id'])): ?>
+                    <a href="delete.php?id=<?= $recipe_id; ?>&csrf_token=<?= $_SESSION['csrf_token']; ?>" class="btn btn-delete" onclick="return confirm('Delete this recipe?')"><span class="material-icons" style="vertical-align:middle;">delete</span> Delete</a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
